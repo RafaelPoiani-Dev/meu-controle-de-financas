@@ -1,0 +1,1 @@
+ALTER TABLE public.transactions ADD COLUMN status text NOT NULL DEFAULT 'pending';

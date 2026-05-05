@@ -1,0 +1,1 @@
+ALTER TABLE public.user_dashboard_fields ADD COLUMN category text DEFAULT NULL;
