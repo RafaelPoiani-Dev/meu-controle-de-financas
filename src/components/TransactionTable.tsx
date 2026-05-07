@@ -36,6 +36,17 @@ const TransactionTable = ({ transactions, onDelete, onToggleStatus, onEdit, show
   const isExpanded = (t: Transaction | ExpandedTransaction): t is ExpandedTransaction =>
     "isVirtual" in t;
 
+  const totalIncome = transactions
+    .filter((t) => t.type === "income")
+    .reduce((s, t) => s + t.amount, 0);
+  const totalExpense = transactions
+    .filter((t) => t.type === "expense")
+    .reduce((s, t) => s + t.amount, 0);
+  const totalOther = transactions
+    .filter((t) => t.type !== "income" && t.type !== "expense")
+    .reduce((s, t) => s + t.amount, 0);
+  const net = totalIncome - totalExpense - totalOther;
+
   return (
     <div className="bg-card rounded-lg shadow-card overflow-hidden animate-fade-in">
       <div className="overflow-x-auto">
@@ -131,6 +142,17 @@ const TransactionTable = ({ transactions, onDelete, onToggleStatus, onEdit, show
             })}
           </tbody>
         </table>
+      </div>
+      <div className="border-t border-border bg-muted/30 px-4 py-3 flex flex-wrap items-center justify-end gap-x-6 gap-y-1 text-sm">
+        <span className="text-muted-foreground">
+          Entradas: <span className="font-semibold text-income">+ {formatCurrency(totalIncome)}</span>
+        </span>
+        <span className="text-muted-foreground">
+          Saídas: <span className="font-semibold text-expense">- {formatCurrency(totalExpense + totalOther)}</span>
+        </span>
+        <span className="font-bold text-foreground">
+          Total: <span className={net >= 0 ? "text-income" : "text-expense"}>{formatCurrency(net)}</span>
+        </span>
       </div>
     </div>
   );
