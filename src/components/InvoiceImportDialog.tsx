@@ -19,6 +19,7 @@ interface Props {
   onClose: () => void;
   creditCardNames: string[];
   categories: string[];
+  defaultCategory?: string;
   existingTransactions: Transaction[];
   onImport: (transactions: Omit<Transaction, "id">[]) => Promise<void> | void;
 }
@@ -38,11 +39,12 @@ export default function InvoiceImportDialog({
   onClose,
   creditCardNames,
   categories,
+  defaultCategory,
   existingTransactions,
   onImport,
 }: Props) {
   const [card, setCard] = useState<string>(creditCardNames[0] ?? "");
-  const [category, setCategory] = useState<string>(categories[0] ?? "");
+  const category = defaultCategory ?? categories[0] ?? "Outros";
   const [loading, setLoading] = useState(false);
   const [parsed, setParsed] = useState<ParsedItem[] | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -191,31 +193,17 @@ export default function InvoiceImportDialog({
 
         {!parsed && (
           <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium mb-1">Cartão</label>
-                <select
-                  value={card}
-                  onChange={(e) => setCard(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm"
-                >
-                  {creditCardNames.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Categoria padrão</label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm"
-                >
-                  {categories.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-              </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Cartão da fatura</label>
+              <select
+                value={card}
+                onChange={(e) => setCard(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm"
+              >
+                {creditCardNames.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
             </div>
 
             <label className="flex flex-col items-center justify-center border-2 border-dashed border-border rounded-xl p-8 cursor-pointer hover:bg-muted/50 transition">
