@@ -36,6 +36,17 @@ const TransactionTable = ({ transactions, onDelete, onToggleStatus, onEdit, show
   const isExpanded = (t: Transaction | ExpandedTransaction): t is ExpandedTransaction =>
     "isVirtual" in t;
 
+  const totalIncome = transactions
+    .filter((t) => t.type === "income")
+    .reduce((s, t) => s + t.amount, 0);
+  const totalExpense = transactions
+    .filter((t) => t.type === "expense")
+    .reduce((s, t) => s + t.amount, 0);
+  const totalOther = transactions
+    .filter((t) => t.type !== "income" && t.type !== "expense")
+    .reduce((s, t) => s + t.amount, 0);
+  const net = totalIncome - totalExpense - totalOther;
+
   return (
     <div className="bg-card rounded-lg shadow-card overflow-hidden animate-fade-in">
       <div className="overflow-x-auto">
