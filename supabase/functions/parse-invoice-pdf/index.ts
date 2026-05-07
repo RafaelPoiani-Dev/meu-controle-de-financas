@@ -1,11 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
+import { extractText, getDocumentProxy } from "https://esm.sh/unpdf@0.12.1";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    // Auth
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -37,6 +37,34 @@ Deno.serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY não configurada");
 
+    // Decode base64 -> Uint8Array
+    const binary = atob(pdfBase64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+
+    // Extract text from PDF
+    let pdfText = "";
+    try {
+      const pdf = await getDocumentProxy(bytes);
+      const { text } = await extractText(pdf, { mergePages: true });
+      pdfText = (Array.isArray(text) ? text.join("\n") : text).replace(/\s+\n/g, "\n").trim();
+    } catch (err) {
+      console.error("unpdf extract failed:", err);
+    }
+
+    if (!pdfText || pdfText.length < 50) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "Não foi possível ler o texto do PDF. Pode ser uma fatura em imagem (escaneada) ou protegida por senha. Tente exportar uma versão em texto.",
+        }),
+        { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Trim to keep token budget reasonable
+    if (pdfText.length > 40000) pdfText = pdfText.slice(0, 40000);
+
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -49,17 +77,11 @@ Deno.serve(async (req) => {
           {
             role: "system",
             content:
-              "Você extrai transações de faturas de cartão de crédito em PDF. Para cada lançamento da fatura, retorne data (YYYY-MM-DD), descrição (limpa, sem códigos extras), valor em reais (positivo para compras, negativo para estornos/créditos) e parcela quando houver (ex: '2/6'). Ignore totais, juros consolidados e cabeçalhos.",
+              "Você extrai transações de faturas de cartão de crédito brasileiras. Para cada lançamento (compra/estorno) retorne: data (YYYY-MM-DD — se a fatura mostrar só dia/mês, use o ano da fatura), descrição limpa (sem códigos de autorização), valor em reais (positivo para compras/débitos, negativo para créditos/estornos/pagamentos recebidos) e parcela quando houver (ex: '2/6'). Ignore: totais, subtotais, juros consolidados, IOF, saldo anterior, pagamentos da fatura anterior, cabeçalhos/rodapés. Use ponto como separador decimal.",
           },
           {
             role: "user",
-            content: [
-              { type: "text", text: `Extraia todas as transações desta fatura (${fileName ?? "fatura.pdf"}).` },
-              {
-                type: "image_url",
-                image_url: { url: `data:application/pdf;base64,${pdfBase64}` },
-              },
-            ],
+            content: `Extraia todas as transações desta fatura (${fileName ?? "fatura.pdf"}). Texto extraído do PDF:\n\n${pdfText}`,
           },
         ],
         tools: [
@@ -118,6 +140,7 @@ Deno.serve(async (req) => {
     const aiData = await aiResp.json();
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall) {
+      console.error("No tool_call in AI response:", JSON.stringify(aiData).slice(0, 500));
       return new Response(JSON.stringify({ error: "Não foi possível extrair transações" }), {
         status: 422,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -130,7 +153,7 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     console.error("parse-invoice-pdf error:", e);
-    return new Response(JSON.stringify({ error: "Erro interno" }), {
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Erro interno" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
