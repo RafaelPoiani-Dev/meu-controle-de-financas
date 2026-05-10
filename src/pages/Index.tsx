@@ -470,7 +470,10 @@ const Index = () => {
                   <div key={item.card} className="bg-card rounded-lg shadow-card p-5 border border-border">
                     <p className="text-sm font-semibold text-foreground mb-3">{item.card}</p>
                     <div className="space-y-1.5 text-sm">
-                      <p className="text-muted-foreground">Gasto: <span className="font-semibold text-expense">{fmt(item.spent)}</span></p>
+                      <p className="text-muted-foreground">Gasto (mês): <span className="font-semibold text-expense">{fmt(item.spent)}</span></p>
+                      {item.committed !== item.spent && (
+                        <p className="text-muted-foreground">Comprometido (futuro): <span className="font-semibold text-expense">{fmt(item.committed)}</span></p>
+                      )}
                       <p className="text-muted-foreground">Limite: <span className="font-semibold text-foreground">{fmt(item.limit)}</span></p>
                       <p className="text-muted-foreground">Restante: <span className={`font-semibold ${item.remaining >= 0 ? "text-income" : "text-expense"}`}>{fmt(item.remaining)}</span></p>
                     </div>
