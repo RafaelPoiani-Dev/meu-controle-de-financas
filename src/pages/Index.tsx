@@ -12,7 +12,10 @@ import {
   List,
   Settings,
   FileText,
+  Filter,
 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import SummaryCard from "../components/SummaryCard";
 import DataEntryForm from "../components/DataEntryForm";
 import TransactionTable from "../components/TransactionTable";
