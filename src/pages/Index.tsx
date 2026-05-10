@@ -485,8 +485,11 @@ const Index = () => {
                   <p className="text-sm font-bold text-foreground mb-3">
                     Total {selectedCardFilter.length > 0 ? `(${visibleCards.length} cartão(ões) selecionado(s))` : "(todos os cartões)"}
                   </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-                    <p className="text-muted-foreground">Gasto: <span className="font-bold text-expense">{fmt(totalSpent)}</span></p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                    <p className="text-muted-foreground">Gasto (mês): <span className="font-bold text-expense">{fmt(totalSpent)}</span></p>
+                    {totalCommitted !== totalSpent && (
+                      <p className="text-muted-foreground">Comprometido (futuro): <span className="font-bold text-expense">{fmt(totalCommitted)}</span></p>
+                    )}
                     <p className="text-muted-foreground">Limite: <span className="font-bold text-foreground">{fmt(totalLimit)}</span></p>
                     <p className="text-muted-foreground">Restante: <span className={`font-bold ${totalRemaining >= 0 ? "text-income" : "text-expense"}`}>{fmt(totalRemaining)}</span></p>
                   </div>
