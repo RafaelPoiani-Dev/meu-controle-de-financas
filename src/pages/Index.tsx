@@ -393,8 +393,9 @@ const Index = () => {
             ? cardSummary.filter((c) => selectedCardFilter.includes(c.card))
             : cardSummary;
           const totalSpent = visibleCards.reduce((s, c) => s + c.spent, 0);
+          const totalCommitted = visibleCards.reduce((s, c) => s + c.committed, 0);
           const totalLimit = visibleCards.reduce((s, c) => s + c.limit, 0);
-          const totalRemaining = totalLimit - totalSpent;
+          const totalRemaining = totalLimit - totalCommitted;
           const toggleCard = (name: string) =>
             setSelectedCardFilter((prev) =>
               prev.includes(name) ? prev.filter((c) => c !== name) : [...prev, name]
