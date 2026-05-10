@@ -12,7 +12,10 @@ import {
   List,
   Settings,
   FileText,
+  Filter,
 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import SummaryCard from "../components/SummaryCard";
 import DataEntryForm from "../components/DataEntryForm";
 import TransactionTable from "../components/TransactionTable";
@@ -54,6 +57,7 @@ const Index = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filters, setFilters] = useState<FilterState>(emptyFilters);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
+  const [selectedCardFilter, setSelectedCardFilter] = useState<string[]>([]);
   const editingTransaction = useMemo(
     () => transactions.find((t) => t.id === editingId) ?? null,
     [transactions, editingId],
@@ -367,34 +371,109 @@ const Index = () => {
           </div>
         )}
 
-        {activeTab === "cards" && (
-          <div className="space-y-4 animate-fade-in">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <h2 className="text-lg font-bold font-display text-foreground">
-                Gastos por Cartão — {MONTHS_FULL[selectedMonth]} {selectedYear}
-              </h2>
-              <button
-                onClick={() => setInvoiceOpen(true)}
-                className="flex items-center gap-2 gradient-warm text-primary-foreground px-3 py-2 rounded-lg text-sm font-semibold shadow-warm hover:opacity-90 transition"
-              >
-                <FileText size={16} />
-                Importar fatura (PDF)
-              </button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {cardSummary.map((item) => (
-                <div key={item.card} className="bg-card rounded-lg shadow-card p-5 border border-border">
-                  <p className="text-sm font-semibold text-foreground mb-3">{item.card}</p>
-                  <div className="space-y-1.5 text-sm">
-                    <p className="text-muted-foreground">Gasto: <span className="font-semibold text-expense">{fmt(item.spent)}</span></p>
-                    <p className="text-muted-foreground">Limite: <span className="font-semibold text-foreground">{fmt(item.limit)}</span></p>
-                    <p className="text-muted-foreground">Restante: <span className={`font-semibold ${item.remaining >= 0 ? "text-income" : "text-expense"}`}>{fmt(item.remaining)}</span></p>
+        {activeTab === "cards" && (() => {
+          const visibleCards = selectedCardFilter.length > 0
+            ? cardSummary.filter((c) => selectedCardFilter.includes(c.card))
+            : cardSummary;
+          const totalSpent = visibleCards.reduce((s, c) => s + c.spent, 0);
+          const totalLimit = visibleCards.reduce((s, c) => s + c.limit, 0);
+          const totalRemaining = totalLimit - totalSpent;
+          const toggleCard = (name: string) =>
+            setSelectedCardFilter((prev) =>
+              prev.includes(name) ? prev.filter((c) => c !== name) : [...prev, name]
+            );
+          return (
+            <div className="space-y-4 animate-fade-in">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <h2 className="text-lg font-bold font-display text-foreground">
+                  Gastos por Cartão — {MONTHS_FULL[selectedMonth]} {selectedYear}
+                </h2>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button
+                        className={`relative flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                          selectedCardFilter.length > 0
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-input bg-background text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        <Filter size={14} />
+                        Filtrar cartões
+                        {selectedCardFilter.length > 0 && (
+                          <span className="ml-0.5 inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-bold w-4 h-4">
+                            {selectedCardFilter.length}
+                          </span>
+                        )}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent align="end" className="w-72 p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-sm font-semibold text-foreground">Cartões</div>
+                        {selectedCardFilter.length > 0 && (
+                          <button
+                            onClick={() => setSelectedCardFilter([])}
+                            className="text-xs text-muted-foreground hover:text-foreground"
+                          >
+                            Limpar
+                          </button>
+                        )}
+                      </div>
+                      <div className="max-h-60 overflow-y-auto space-y-1.5">
+                        {cardSummary.length === 0 && (
+                          <p className="text-xs text-muted-foreground">Nenhum cartão</p>
+                        )}
+                        {cardSummary.map((c) => (
+                          <label
+                            key={c.card}
+                            className="flex items-center gap-2 cursor-pointer text-sm text-foreground hover:bg-muted/50 rounded px-1 py-0.5"
+                          >
+                            <Checkbox
+                              checked={selectedCardFilter.includes(c.card)}
+                              onCheckedChange={() => toggleCard(c.card)}
+                            />
+                            <span className="truncate">{c.card}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  <button
+                    onClick={() => setInvoiceOpen(true)}
+                    className="flex items-center gap-2 gradient-warm text-primary-foreground px-3 py-2 rounded-lg text-sm font-semibold shadow-warm hover:opacity-90 transition"
+                  >
+                    <FileText size={16} />
+                    Importar fatura (PDF)
+                  </button>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {visibleCards.map((item) => (
+                  <div key={item.card} className="bg-card rounded-lg shadow-card p-5 border border-border">
+                    <p className="text-sm font-semibold text-foreground mb-3">{item.card}</p>
+                    <div className="space-y-1.5 text-sm">
+                      <p className="text-muted-foreground">Gasto: <span className="font-semibold text-expense">{fmt(item.spent)}</span></p>
+                      <p className="text-muted-foreground">Limite: <span className="font-semibold text-foreground">{fmt(item.limit)}</span></p>
+                      <p className="text-muted-foreground">Restante: <span className={`font-semibold ${item.remaining >= 0 ? "text-income" : "text-expense"}`}>{fmt(item.remaining)}</span></p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {visibleCards.length > 0 && (
+                <div className="bg-card rounded-lg shadow-card p-5 border-2 border-primary/30">
+                  <p className="text-sm font-bold text-foreground mb-3">
+                    Total {selectedCardFilter.length > 0 ? `(${visibleCards.length} cartão(ões) selecionado(s))` : "(todos os cartões)"}
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                    <p className="text-muted-foreground">Gasto: <span className="font-bold text-expense">{fmt(totalSpent)}</span></p>
+                    <p className="text-muted-foreground">Limite: <span className="font-bold text-foreground">{fmt(totalLimit)}</span></p>
+                    <p className="text-muted-foreground">Restante: <span className={`font-bold ${totalRemaining >= 0 ? "text-income" : "text-expense"}`}>{fmt(totalRemaining)}</span></p>
                   </div>
                 </div>
-              ))}
+              )}
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {activeTab === "settings" && (
           <SettingsTab
