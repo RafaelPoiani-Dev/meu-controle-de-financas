@@ -178,14 +178,31 @@ const Index = () => {
       }, {});
   }, [filteredTransactions]);
 
+  // Committed (current month + future installments still open) — matches the bank's "limite disponível" logic
+  const committedByCard = useMemo(() => {
+    const startKey = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`;
+    return expandedTransactions
+      .filter((t) => {
+        if (t.type !== "expense" || !t.creditCard) return false;
+        const eff = (t.paymentDate || t.date).slice(0, 7);
+        return eff >= startKey;
+      })
+      .reduce<Record<string, number>>((acc, t) => {
+        const card = t.creditCard as string;
+        acc[card] = (acc[card] ?? 0) + t.amount;
+        return acc;
+      }, {});
+  }, [expandedTransactions, selectedYear, selectedMonth]);
+
   const cardSummary = useMemo(
     () =>
       cardNames.map((card) => {
         const spent = spentByCard[card] ?? 0;
+        const committed = committedByCard[card] ?? 0;
         const limit = cardLimitsMap[card] ?? 0;
-        return { card, spent, limit, remaining: limit - spent };
+        return { card, spent, limit, committed, remaining: limit - committed };
       }),
-    [cardNames, spentByCard, cardLimitsMap],
+    [cardNames, spentByCard, committedByCard, cardLimitsMap],
   );
 
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -376,8 +393,9 @@ const Index = () => {
             ? cardSummary.filter((c) => selectedCardFilter.includes(c.card))
             : cardSummary;
           const totalSpent = visibleCards.reduce((s, c) => s + c.spent, 0);
+          const totalCommitted = visibleCards.reduce((s, c) => s + c.committed, 0);
           const totalLimit = visibleCards.reduce((s, c) => s + c.limit, 0);
-          const totalRemaining = totalLimit - totalSpent;
+          const totalRemaining = totalLimit - totalCommitted;
           const toggleCard = (name: string) =>
             setSelectedCardFilter((prev) =>
               prev.includes(name) ? prev.filter((c) => c !== name) : [...prev, name]
@@ -452,7 +470,10 @@ const Index = () => {
                   <div key={item.card} className="bg-card rounded-lg shadow-card p-5 border border-border">
                     <p className="text-sm font-semibold text-foreground mb-3">{item.card}</p>
                     <div className="space-y-1.5 text-sm">
-                      <p className="text-muted-foreground">Gasto: <span className="font-semibold text-expense">{fmt(item.spent)}</span></p>
+                      <p className="text-muted-foreground">Gasto (mês): <span className="font-semibold text-expense">{fmt(item.spent)}</span></p>
+                      {item.committed !== item.spent && (
+                        <p className="text-muted-foreground">Comprometido (futuro): <span className="font-semibold text-expense">{fmt(item.committed)}</span></p>
+                      )}
                       <p className="text-muted-foreground">Limite: <span className="font-semibold text-foreground">{fmt(item.limit)}</span></p>
                       <p className="text-muted-foreground">Restante: <span className={`font-semibold ${item.remaining >= 0 ? "text-income" : "text-expense"}`}>{fmt(item.remaining)}</span></p>
                     </div>
@@ -464,8 +485,11 @@ const Index = () => {
                   <p className="text-sm font-bold text-foreground mb-3">
                     Total {selectedCardFilter.length > 0 ? `(${visibleCards.length} cartão(ões) selecionado(s))` : "(todos os cartões)"}
                   </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-                    <p className="text-muted-foreground">Gasto: <span className="font-bold text-expense">{fmt(totalSpent)}</span></p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                    <p className="text-muted-foreground">Gasto (mês): <span className="font-bold text-expense">{fmt(totalSpent)}</span></p>
+                    {totalCommitted !== totalSpent && (
+                      <p className="text-muted-foreground">Comprometido (futuro): <span className="font-bold text-expense">{fmt(totalCommitted)}</span></p>
+                    )}
                     <p className="text-muted-foreground">Limite: <span className="font-bold text-foreground">{fmt(totalLimit)}</span></p>
                     <p className="text-muted-foreground">Restante: <span className={`font-bold ${totalRemaining >= 0 ? "text-income" : "text-expense"}`}>{fmt(totalRemaining)}</span></p>
                   </div>
