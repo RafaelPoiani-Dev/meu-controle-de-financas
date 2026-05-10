@@ -178,14 +178,31 @@ const Index = () => {
       }, {});
   }, [filteredTransactions]);
 
+  // Committed (current month + future installments still open) — matches the bank's "limite disponível" logic
+  const committedByCard = useMemo(() => {
+    const startKey = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`;
+    return expandedTransactions
+      .filter((t) => {
+        if (t.type !== "expense" || !t.creditCard) return false;
+        const eff = (t.paymentDate || t.date).slice(0, 7);
+        return eff >= startKey;
+      })
+      .reduce<Record<string, number>>((acc, t) => {
+        const card = t.creditCard as string;
+        acc[card] = (acc[card] ?? 0) + t.amount;
+        return acc;
+      }, {});
+  }, [expandedTransactions, selectedYear, selectedMonth]);
+
   const cardSummary = useMemo(
     () =>
       cardNames.map((card) => {
         const spent = spentByCard[card] ?? 0;
+        const committed = committedByCard[card] ?? 0;
         const limit = cardLimitsMap[card] ?? 0;
-        return { card, spent, limit, remaining: limit - spent };
+        return { card, spent, limit, committed, remaining: limit - committed };
       }),
-    [cardNames, spentByCard, cardLimitsMap],
+    [cardNames, spentByCard, committedByCard, cardLimitsMap],
   );
 
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
