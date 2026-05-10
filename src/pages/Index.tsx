@@ -87,11 +87,12 @@ const Index = () => {
 
   const visibleTransactions = useMemo(() => {
     return filteredTransactions.filter((t) => {
-      if (filters.category && t.category !== filters.category) return false;
-      if (filters.paymentMethod) {
-        if (filters.paymentMethod === "__cash__") {
-          if (t.creditCard) return false;
-        } else if (t.creditCard !== filters.paymentMethod) return false;
+      if (filters.categories.length > 0 && !filters.categories.includes(t.category)) return false;
+      if (filters.paymentMethods.length > 0) {
+        const matches = filters.paymentMethods.some((pm) =>
+          pm === "__cash__" ? !t.creditCard : t.creditCard === pm
+        );
+        if (!matches) return false;
       }
       const effective = t.paymentDate || t.date;
       if (filters.dateFrom && effective < filters.dateFrom) return false;

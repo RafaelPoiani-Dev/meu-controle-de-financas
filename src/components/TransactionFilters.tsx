@@ -1,16 +1,17 @@
 import { Filter, X } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export interface FilterState {
-  category: string;
-  paymentMethod: string;
+  categories: string[];
+  paymentMethods: string[];
   dateFrom: string;
   dateTo: string;
 }
 
 export const emptyFilters: FilterState = {
-  category: "",
-  paymentMethod: "",
+  categories: [],
+  paymentMethods: [],
   dateFrom: "",
   dateTo: "",
 };
@@ -24,13 +25,16 @@ interface TransactionFiltersProps {
 
 const TransactionFilters = ({ filters, onChange, categories, paymentMethods }: TransactionFiltersProps) => {
   const activeCount =
-    (filters.category ? 1 : 0) +
-    (filters.paymentMethod ? 1 : 0) +
+    filters.categories.length +
+    filters.paymentMethods.length +
     (filters.dateFrom ? 1 : 0) +
     (filters.dateTo ? 1 : 0);
   const hasActive = activeCount > 0;
 
   const update = (patch: Partial<FilterState>) => onChange({ ...filters, ...patch });
+
+  const toggleIn = (list: string[], value: string) =>
+    list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
 
   return (
     <Popover>
@@ -68,34 +72,49 @@ const TransactionFilters = ({ filters, onChange, categories, paymentMethods }: T
           )}
         </div>
 
-        <div className="space-y-2.5">
+        <div className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">Categoria</label>
-            <select
-              value={filters.category}
-              onChange={(e) => update({ category: e.target.value })}
-              className="w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="">Todas</option>
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+              Categorias {filters.categories.length > 0 && `(${filters.categories.length})`}
+            </label>
+            <div className="max-h-40 overflow-y-auto rounded-md border border-input bg-background p-2 space-y-1.5">
+              {categories.length === 0 && (
+                <p className="text-xs text-muted-foreground">Nenhuma categoria disponível</p>
+              )}
               {categories.map((c) => (
-                <option key={c} value={c}>{c}</option>
+                <label key={c} className="flex items-center gap-2 cursor-pointer text-sm text-foreground hover:bg-muted/50 rounded px-1 py-0.5">
+                  <Checkbox
+                    checked={filters.categories.includes(c)}
+                    onCheckedChange={() => update({ categories: toggleIn(filters.categories, c) })}
+                  />
+                  <span className="truncate">{c}</span>
+                </label>
               ))}
-            </select>
+            </div>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">Meio de pagamento</label>
-            <select
-              value={filters.paymentMethod}
-              onChange={(e) => update({ paymentMethod: e.target.value })}
-              className="w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="">Todos</option>
-              <option value="__cash__">Dinheiro / Débito</option>
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+              Meios de pagamento {filters.paymentMethods.length > 0 && `(${filters.paymentMethods.length})`}
+            </label>
+            <div className="max-h-40 overflow-y-auto rounded-md border border-input bg-background p-2 space-y-1.5">
+              <label className="flex items-center gap-2 cursor-pointer text-sm text-foreground hover:bg-muted/50 rounded px-1 py-0.5">
+                <Checkbox
+                  checked={filters.paymentMethods.includes("__cash__")}
+                  onCheckedChange={() => update({ paymentMethods: toggleIn(filters.paymentMethods, "__cash__") })}
+                />
+                <span>Dinheiro / Débito</span>
+              </label>
               {paymentMethods.map((c) => (
-                <option key={c} value={c}>{c}</option>
+                <label key={c} className="flex items-center gap-2 cursor-pointer text-sm text-foreground hover:bg-muted/50 rounded px-1 py-0.5">
+                  <Checkbox
+                    checked={filters.paymentMethods.includes(c)}
+                    onCheckedChange={() => update({ paymentMethods: toggleIn(filters.paymentMethods, c) })}
+                  />
+                  <span className="truncate">{c}</span>
+                </label>
               ))}
-            </select>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
