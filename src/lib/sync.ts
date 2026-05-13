@@ -52,7 +52,7 @@ export async function pullAll(userId: string) {
     await db.transaction("rw", tbl, async () => {
       for (const remote of data as any[]) {
         if (remote.updated_at > maxUpdated) maxUpdated = remote.updated_at;
-        const local = await tbl.get(remote.id);
+        const local = (await tbl.get(remote.id)) as any;
         // Don't overwrite rows with pending local changes — push will reconcile.
         if (local?._dirty) continue;
         await tbl.put({ ...remote, _deleted: 0, _dirty: 0 });
@@ -156,7 +156,8 @@ export async function localDelete(table: SyncTable, id: string) {
 }
 
 export async function clearUserCache(userId: string) {
-  await db.transaction("rw", db.transactions, db.user_credit_cards, db.user_categories, db.user_dashboard_fields, db.outbox, db.meta, async () => {
+  const tables = [db.transactions, db.user_credit_cards, db.user_categories, db.user_dashboard_fields, db.outbox, db.meta];
+  await db.transaction("rw", tables, async () => {
     for (const t of TABLES) {
       await tableOf(t).where("user_id").equals(userId).delete();
     }

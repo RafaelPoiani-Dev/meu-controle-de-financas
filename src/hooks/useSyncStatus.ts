@@ -9,7 +9,8 @@ export function useSyncStatus(userId: string | undefined) {
   const [syncing, setSyncing] = useState(isSyncing());
 
   useEffect(() => {
-    return onSyncChange(() => setSyncing(isSyncing()));
+    const off = onSyncChange(() => setSyncing(isSyncing()));
+    return () => { off(); };
   }, []);
 
   const pendingCount = useLiveQuery(() => db.outbox.count(), [], 0);
