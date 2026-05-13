@@ -28,6 +28,7 @@ export type Database = {
           payment_date: string | null
           status: string
           type: string
+          updated_at: string
           user_id: string
         }
         Insert: {
@@ -43,6 +44,7 @@ export type Database = {
           payment_date?: string | null
           status?: string
           type: string
+          updated_at?: string
           user_id: string
         }
         Update: {
@@ -58,6 +60,7 @@ export type Database = {
           payment_date?: string | null
           status?: string
           type?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -68,6 +71,7 @@ export type Database = {
           id: string
           name: string
           type: string
+          updated_at: string
           user_id: string
         }
         Insert: {
@@ -75,6 +79,7 @@ export type Database = {
           id?: string
           name: string
           type: string
+          updated_at?: string
           user_id: string
         }
         Update: {
@@ -82,6 +87,7 @@ export type Database = {
           id?: string
           name?: string
           type?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -92,6 +98,7 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          updated_at: string
           user_id: string
         }
         Insert: {
@@ -99,6 +106,7 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
+          updated_at?: string
           user_id: string
         }
         Update: {
@@ -106,6 +114,7 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -118,6 +127,7 @@ export type Database = {
           id: string
           label: string
           sort_order: number
+          updated_at: string
           user_id: string
           visible: boolean
         }
@@ -128,6 +138,7 @@ export type Database = {
           id?: string
           label: string
           sort_order?: number
+          updated_at?: string
           user_id: string
           visible?: boolean
         }
@@ -138,6 +149,7 @@ export type Database = {
           id?: string
           label?: string
           sort_order?: number
+          updated_at?: string
           user_id?: string
           visible?: boolean
         }
