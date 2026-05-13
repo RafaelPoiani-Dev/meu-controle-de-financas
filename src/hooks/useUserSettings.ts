@@ -1,5 +1,7 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
+import { db, newId, nowIso, type LocalCard, type LocalCategory, type LocalDashboardField } from "@/lib/db";
+import { localDelete, localUpsert } from "@/lib/sync";
 import { toast } from "sonner";
 
 export interface UserCategory {
@@ -62,68 +64,91 @@ const defaultDashboardFields = [
   { label: "Saldo", fieldType: "balance", sortOrder: 2 },
 ];
 
+function stripFlags<T extends Record<string, any>>(row: T) {
+  const { _deleted, _dirty, ...rest } = row as any;
+  return rest;
+}
+
 export function useUserSettings(userId: string | undefined) {
-  const [categories, setCategories] = useState<UserCategory[]>([]);
-  const [creditCards, setCreditCards] = useState<UserCreditCard[]>([]);
-  const [dashboardFields, setDashboardFields] = useState<UserDashboardField[]>([]);
-  const [loading, setLoading] = useState(true);
+  const catRows = useLiveQuery(
+    async () => userId ? (await db.user_categories.where("user_id").equals(userId).toArray()).filter(r => !r._deleted) : [],
+    [userId],
+    [] as LocalCategory[],
+  );
+  const cardRows = useLiveQuery(
+    async () => userId ? (await db.user_credit_cards.where("user_id").equals(userId).toArray()).filter(r => !r._deleted) : [],
+    [userId],
+    [] as LocalCard[],
+  );
+  const fieldRows = useLiveQuery(
+    async () => userId ? (await db.user_dashboard_fields.where("user_id").equals(userId).toArray()).filter(r => !r._deleted).sort((a, b) => a.sort_order - b.sort_order) : [],
+    [userId],
+    [] as LocalDashboardField[],
+  );
 
-  const fetchAll = useCallback(async () => {
-    if (!userId) return;
-    setLoading(true);
+  const categories: UserCategory[] = useMemo(
+    () => (catRows ?? []).map((r) => ({ id: r.id, name: r.name, type: r.type })),
+    [catRows],
+  );
+  const creditCards: UserCreditCard[] = useMemo(
+    () => (cardRows ?? []).map((r) => ({ id: r.id, name: r.name, cardLimit: Number(r.card_limit) })),
+    [cardRows],
+  );
+  const dashboardFields: UserDashboardField[] = useMemo(
+    () => (fieldRows ?? []).map((r) => ({
+      id: r.id, label: r.label, fieldType: r.field_type, visible: r.visible,
+      sortOrder: r.sort_order, category: r.category ?? undefined,
+    })),
+    [fieldRows],
+  );
 
-    const [catRes, cardRes, fieldRes] = await Promise.all([
-      supabase.from("user_categories").select("*").order("created_at"),
-      supabase.from("user_credit_cards").select("*").order("created_at"),
-      supabase.from("user_dashboard_fields").select("*").order("sort_order"),
-    ]);
+  const loading = catRows === undefined || cardRows === undefined || fieldRows === undefined;
 
-    // Seed defaults if empty
-    if (!catRes.data?.length) {
-      const { data } = await supabase
-        .from("user_categories")
-        .insert(defaultCategories.map((c) => ({ ...c, user_id: userId })))
-        .select();
-      setCategories((data ?? []).map((r: any) => ({ id: r.id, name: r.name, type: r.type })));
-    } else {
-      setCategories(catRes.data.map((r: any) => ({ id: r.id, name: r.name, type: r.type })));
-    }
+  // Seed defaults once per user (after the first sync pull empties out)
+  const [seeded, setSeeded] = useState(false);
+  useEffect(() => {
+    if (!userId || loading || seeded) return;
+    const seedKey = `seeded:${userId}`;
+    (async () => {
+      const flag = await db.meta.get(seedKey);
+      if (flag) { setSeeded(true); return; }
+      // Wait one tick for any initial pull to populate before seeding to avoid duplicates.
+      // We seed only if BOTH local cache is empty AND no server data has been pulled yet.
+      const lastSync = await db.meta.get(`lastSync:user_categories:${userId}`);
+      if (lastSync && !categories.length) {
+        // server is empty too — safe to seed
+      } else if (!lastSync && (!navigator.onLine)) {
+        // offline first run, seed locally; will push when online
+      } else if (categories.length || creditCards.length || dashboardFields.length) {
+        await db.meta.put({ key: seedKey, value: true });
+        setSeeded(true);
+        return;
+      } else if (!lastSync) {
+        // wait for pull
+        return;
+      }
 
-    if (!cardRes.data?.length) {
-      const { data } = await supabase
-        .from("user_credit_cards")
-        .insert(defaultCards.map((c) => ({ name: c.name, card_limit: c.cardLimit, user_id: userId })))
-        .select();
-      setCreditCards((data ?? []).map((r: any) => ({ id: r.id, name: r.name, cardLimit: Number(r.card_limit) })));
-    } else {
-      setCreditCards(cardRes.data.map((r: any) => ({ id: r.id, name: r.name, cardLimit: Number(r.card_limit) })));
-    }
+      const now = nowIso();
+      if (!categories.length) {
+        for (const c of defaultCategories) {
+          await localUpsert("user_categories", { id: newId(), user_id: userId, name: c.name, type: c.type, created_at: now, updated_at: now });
+        }
+      }
+      if (!creditCards.length) {
+        for (const c of defaultCards) {
+          await localUpsert("user_credit_cards", { id: newId(), user_id: userId, name: c.name, card_limit: c.cardLimit, created_at: now, updated_at: now });
+        }
+      }
+      if (!dashboardFields.length) {
+        for (const f of defaultDashboardFields) {
+          await localUpsert("user_dashboard_fields", { id: newId(), user_id: userId, label: f.label, field_type: f.fieldType, visible: true, sort_order: f.sortOrder, category: null, created_at: now, updated_at: now });
+        }
+      }
+      await db.meta.put({ key: seedKey, value: true });
+      setSeeded(true);
+    })();
+  }, [userId, loading, seeded, categories.length, creditCards.length, dashboardFields.length]);
 
-    if (!fieldRes.data?.length) {
-      const { data } = await supabase
-        .from("user_dashboard_fields")
-        .insert(defaultDashboardFields.map((f) => ({ ...f, field_type: f.fieldType, user_id: userId })))
-        .select();
-      setDashboardFields(
-        (data ?? []).map((r: any) => ({
-          id: r.id, label: r.label, fieldType: r.field_type, visible: r.visible, sortOrder: r.sort_order, category: r.category ?? undefined,
-        }))
-      );
-    } else {
-      setDashboardFields(
-        fieldRes.data.map((r: any) => ({
-          id: r.id, label: r.label, fieldType: r.field_type, visible: r.visible, sortOrder: r.sort_order, category: r.category ?? undefined,
-        }))
-      );
-    }
-
-    setLoading(false);
-  }, [userId]);
-
-  useEffect(() => { fetchAll(); }, [fetchAll]);
-
-  // Categories
-  // Distinct transaction types from categories
   const transactionTypes = useMemo(() => {
     const typeSet = new Set<string>();
     defaultTransactionTypes.forEach((t) => typeSet.add(t.value));
@@ -131,107 +156,86 @@ export function useUserSettings(userId: string | undefined) {
     return Array.from(typeSet);
   }, [categories]);
 
+  // Categories
   const addCategory = useCallback(async (name: string, type: string) => {
     if (!userId) return;
-    const { data, error } = await supabase.from("user_categories").insert({ user_id: userId, name, type }).select().single();
-    if (error) { toast.error("Erro ao adicionar categoria"); return; }
-    setCategories((prev) => [...prev, { id: data.id, name: data.name, type: data.type as "income" | "expense" }]);
+    const now = nowIso();
+    await localUpsert("user_categories", { id: newId(), user_id: userId, name, type, created_at: now, updated_at: now });
     toast.success("Categoria adicionada");
   }, [userId]);
 
   const deleteCategory = useCallback(async (id: string) => {
-    const { error } = await supabase.from("user_categories").delete().eq("id", id);
-    if (error) { toast.error("Erro ao remover categoria"); return; }
-    setCategories((prev) => prev.filter((c) => c.id !== id));
+    await localDelete("user_categories", id);
   }, []);
 
   const updateCategoryName = useCallback(async (id: string, name: string) => {
-    const { error } = await supabase.from("user_categories").update({ name }).eq("id", id);
-    if (error) { toast.error("Erro ao renomear categoria"); return; }
-    setCategories((prev) => prev.map((c) => (c.id === id ? { ...c, name } : c)));
+    const row = await db.user_categories.get(id);
+    if (!row) return;
+    await localUpsert("user_categories", { ...stripFlags(row), name, updated_at: nowIso() });
     toast.success("Categoria renomeada");
   }, []);
 
   // Cards
   const addCard = useCallback(async (name: string, cardLimit: number) => {
     if (!userId) return;
-    const { data, error } = await supabase.from("user_credit_cards").insert({ user_id: userId, name, card_limit: cardLimit }).select().single();
-    if (error) { toast.error("Erro ao adicionar cartão"); return; }
-    setCreditCards((prev) => [...prev, { id: data.id, name: data.name, cardLimit: Number(data.card_limit) }]);
+    const now = nowIso();
+    await localUpsert("user_credit_cards", { id: newId(), user_id: userId, name, card_limit: cardLimit, created_at: now, updated_at: now });
     toast.success("Cartão adicionado");
   }, [userId]);
 
   const deleteCard = useCallback(async (id: string) => {
-    const { error } = await supabase.from("user_credit_cards").delete().eq("id", id);
-    if (error) { toast.error("Erro ao remover cartão"); return; }
-    setCreditCards((prev) => prev.filter((c) => c.id !== id));
+    await localDelete("user_credit_cards", id);
   }, []);
 
   const updateCardLimit = useCallback(async (id: string, cardLimit: number) => {
-    const { error } = await supabase.from("user_credit_cards").update({ card_limit: cardLimit }).eq("id", id);
-    if (error) { toast.error("Erro ao atualizar limite"); return; }
-    setCreditCards((prev) => prev.map((c) => (c.id === id ? { ...c, cardLimit } : c)));
+    const row = await db.user_credit_cards.get(id);
+    if (!row) return;
+    await localUpsert("user_credit_cards", { ...stripFlags(row), card_limit: cardLimit, updated_at: nowIso() });
   }, []);
 
   const updateCardName = useCallback(async (id: string, name: string) => {
-    const { error } = await supabase.from("user_credit_cards").update({ name }).eq("id", id);
-    if (error) { toast.error("Erro ao renomear cartão"); return; }
-    setCreditCards((prev) => prev.map((c) => (c.id === id ? { ...c, name } : c)));
+    const row = await db.user_credit_cards.get(id);
+    if (!row) return;
+    await localUpsert("user_credit_cards", { ...stripFlags(row), name, updated_at: nowIso() });
     toast.success("Cartão renomeado");
   }, []);
 
   // Dashboard fields
   const addDashboardField = useCallback(async (label: string, fieldType: string, category?: string) => {
     if (!userId) return;
-    const order = dashboardFields.length;
-    const insertData: any = { user_id: userId, label, field_type: fieldType, sort_order: order };
-    if (category) insertData.category = category;
-    const { data, error } = await supabase.from("user_dashboard_fields").insert(insertData).select().single();
-    if (error) { toast.error("Erro ao adicionar campo"); return; }
-    setDashboardFields((prev) => [...prev, { id: data.id, label: data.label, fieldType: data.field_type, visible: data.visible, sortOrder: data.sort_order, category: data.category ?? undefined }]);
+    const now = nowIso();
+    await localUpsert("user_dashboard_fields", { id: newId(), user_id: userId, label, field_type: fieldType, visible: true, sort_order: dashboardFields.length, category: category ?? null, created_at: now, updated_at: now });
     toast.success("Campo adicionado");
-  }, [userId, dashboardFields]);
+  }, [userId, dashboardFields.length]);
 
   const deleteDashboardField = useCallback(async (id: string) => {
-    const { error } = await supabase.from("user_dashboard_fields").delete().eq("id", id);
-    if (error) { toast.error("Erro ao remover campo"); return; }
-    setDashboardFields((prev) => prev.filter((f) => f.id !== id));
+    await localDelete("user_dashboard_fields", id);
   }, []);
 
   const toggleFieldVisibility = useCallback(async (id: string) => {
-    const field = dashboardFields.find((f) => f.id === id);
-    if (!field) return;
-    const { error } = await supabase.from("user_dashboard_fields").update({ visible: !field.visible }).eq("id", id);
-    if (error) { toast.error("Erro ao atualizar campo"); return; }
-    setDashboardFields((prev) => prev.map((f) => (f.id === id ? { ...f, visible: !f.visible } : f)));
-  }, [dashboardFields]);
+    const row = await db.user_dashboard_fields.get(id);
+    if (!row) return;
+    await localUpsert("user_dashboard_fields", { ...stripFlags(row), visible: !row.visible, updated_at: nowIso() });
+  }, []);
 
   const updateDashboardField = useCallback(async (id: string, label: string, fieldType: string, category?: string) => {
-    const updateData: any = { label, field_type: fieldType, category: category || null };
-    const { error } = await supabase.from("user_dashboard_fields").update(updateData).eq("id", id);
-    if (error) { toast.error("Erro ao atualizar campo"); return; }
-    setDashboardFields((prev) => prev.map((f) => (f.id === id ? { ...f, label, fieldType, category: category || undefined } : f)));
+    const row = await db.user_dashboard_fields.get(id);
+    if (!row) return;
+    await localUpsert("user_dashboard_fields", { ...stripFlags(row), label, field_type: fieldType, category: category ?? null, updated_at: nowIso() });
   }, []);
 
   const reorderDashboardFields = useCallback(async (orderedIds: string[]) => {
-    setDashboardFields((prev) => {
-      const map = new Map(prev.map((f) => [f.id, f]));
-      return orderedIds
-        .map((id, idx) => {
-          const f = map.get(id);
-          return f ? { ...f, sortOrder: idx } : null;
-        })
-        .filter(Boolean) as UserDashboardField[];
-    });
-    await Promise.all(
-      orderedIds.map((id, idx) =>
-        supabase.from("user_dashboard_fields").update({ sort_order: idx }).eq("id", id)
-      )
-    );
+    const now = nowIso();
+    for (let idx = 0; idx < orderedIds.length; idx++) {
+      const id = orderedIds[idx];
+      const row = await db.user_dashboard_fields.get(id);
+      if (!row) continue;
+      await localUpsert("user_dashboard_fields", { ...stripFlags(row), sort_order: idx, updated_at: now });
+    }
   }, []);
 
   return {
-    categories, creditCards, dashboardFields, loading: loading, transactionTypes,
+    categories, creditCards, dashboardFields, loading, transactionTypes,
     addCategory, deleteCategory, updateCategoryName,
     addCard, deleteCard, updateCardLimit, updateCardName,
     addDashboardField, deleteDashboardField, toggleFieldVisibility, updateDashboardField, reorderDashboardFields,
