@@ -248,7 +248,7 @@ const Index = () => {
                 <h1 className="text-lg sm:text-xl font-bold font-display text-primary-foreground tracking-tight">
                   Controle Financeiro
                 </h1>
-                <OnlineStatusBadge className="bg-primary-foreground/15 border-primary-foreground/20 !text-primary-foreground" />
+                <OnlineStatusBadge userId={user?.id} className="bg-primary-foreground/15 border-primary-foreground/20 !text-primary-foreground" />
               </div>
               <p className="text-primary-foreground/60 text-xs hidden sm:block">
                 {MONTHS_FULL[selectedMonth]} de {selectedYear}
