@@ -32,6 +32,7 @@ import { useTransactions } from "../hooks/useTransactions";
 import { useUserSettings } from "../hooks/useUserSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { expandInstallments, filterByMonthYear } from "@/lib/expandInstallments";
+import OnlineStatusBadge from "@/components/OnlineStatusBadge";
 
 type TabKey = "dashboard" | "entry" | "cards" | "all" | "settings";
 
@@ -243,9 +244,12 @@ const Index = () => {
               <DollarSign size={24} className="text-primary-foreground" />
             </div>
             <div className="flex-1 min-w-0">
-              <h1 className="text-lg sm:text-xl font-bold font-display text-primary-foreground tracking-tight">
-                Controle Financeiro
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-lg sm:text-xl font-bold font-display text-primary-foreground tracking-tight">
+                  Controle Financeiro
+                </h1>
+                <OnlineStatusBadge userId={user?.id} className="bg-primary-foreground/15 border-primary-foreground/20 !text-primary-foreground" />
+              </div>
               <p className="text-primary-foreground/60 text-xs hidden sm:block">
                 {MONTHS_FULL[selectedMonth]} de {selectedYear}
               </p>

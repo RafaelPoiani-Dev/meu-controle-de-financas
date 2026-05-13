@@ -26,6 +26,12 @@ export function useAuth() {
   }, []);
 
   const signOut = async () => {
+    try {
+      const { clearUserCache } = await import("@/lib/sync");
+      if (user?.id) await clearUserCache(user.id);
+    } catch (e) {
+      console.error("Cache clear on signOut failed:", e);
+    }
     await supabase.auth.signOut();
   };
 
