@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      receipts: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string
+          items: Json
+          merchant: string | null
+          purchase_date: string | null
+          total: number
+          transaction_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url: string
+          items?: Json
+          merchant?: string | null
+          purchase_date?: string | null
+          total?: number
+          transaction_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string
+          items?: Json
+          merchant?: string | null
+          purchase_date?: string | null
+          total?: number
+          transaction_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipts_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           amount: number
