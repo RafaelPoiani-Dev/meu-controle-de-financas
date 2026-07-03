@@ -13,7 +13,9 @@ import {
   Settings,
   FileText,
   Filter,
+  Receipt,
 } from "lucide-react";
+import ReceiptScanTab from "../components/ReceiptScanTab";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import SummaryCard from "../components/SummaryCard";
@@ -34,7 +36,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { expandInstallments, filterByMonthYear } from "@/lib/expandInstallments";
 import OnlineStatusBadge from "@/components/OnlineStatusBadge";
 
-type TabKey = "dashboard" | "entry" | "cards" | "all" | "settings";
+type TabKey = "dashboard" | "entry" | "cards" | "all" | "receipts" | "settings";
 
 const MONTHS_FULL = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -223,6 +225,7 @@ const Index = () => {
     { key: "entry", label: "Lançamentos", icon: <PlusCircle size={18} /> },
     { key: "all", label: "Todas", icon: <List size={18} /> },
     { key: "cards", label: "Cartões", icon: <CreditCard size={18} /> },
+    { key: "receipts", label: "Cupom", icon: <Receipt size={18} /> },
     { key: "settings", label: "Ajustes", icon: <Settings size={18} /> },
   ];
 
@@ -502,6 +505,16 @@ const Index = () => {
             </div>
           );
         })()}
+
+        {activeTab === "receipts" && (
+          <ReceiptScanTab
+            userId={user?.id}
+            existingCategories={allCategoryNames}
+            creditCardNames={creditCardNames}
+            addTransaction={addTransaction}
+            addCategory={settings.addCategory}
+          />
+        )}
 
         {activeTab === "settings" && (
           <SettingsTab
