@@ -506,6 +506,16 @@ const Index = () => {
           );
         })()}
 
+        {activeTab === "receipts" && (
+          <ReceiptScanTab
+            userId={user?.id}
+            existingCategories={allCategoryNames}
+            creditCardNames={creditCardNames}
+            addTransaction={addTransaction}
+            addCategory={settings.addCategory}
+          />
+        )}
+
         {activeTab === "settings" && (
           <SettingsTab
             categories={settings.categories}
