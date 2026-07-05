@@ -140,10 +140,17 @@ const ReceiptScanTab = ({ userId, existingCategories, creditCardNames, addTransa
   const saveReceipt = async () => {
     if (!preview || !userId) return;
     try {
-      // Ensure category exists (create if new)
+      // Persist any new categories detected by the AI (top + per-item) into user settings
       const categoryToUse = preview.top_category || preview.items[0]?.category || "Outros";
-      if (categoryToUse && !existingCategories.includes(categoryToUse)) {
-        await addCategory(categoryToUse, "expense");
+      const knownLower = new Set(existingCategories.map((c) => c.toLowerCase()));
+      const toCreate = new Set<string>();
+      if (categoryToUse && !knownLower.has(categoryToUse.toLowerCase())) toCreate.add(categoryToUse);
+      preview.items.forEach((it) => {
+        const c = (it.category || "").trim();
+        if (c && !knownLower.has(c.toLowerCase())) toCreate.add(c);
+      });
+      for (const name of toCreate) {
+        await addCategory(name, "expense");
       }
 
       // Create transaction with total
