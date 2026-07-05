@@ -509,7 +509,7 @@ const Index = () => {
         {activeTab === "receipts" && (
           <ReceiptScanTab
             userId={user?.id}
-            existingCategories={allCategoryNames}
+            existingCategories={settings.categories.filter((c) => c.type === "expense").map((c) => c.name)}
             creditCardNames={creditCardNames}
             addTransaction={addTransaction}
             addCategory={settings.addCategory}
