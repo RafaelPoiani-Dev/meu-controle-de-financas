@@ -149,12 +149,13 @@ const ReceiptScanTab = ({ userId, existingCategories, creditCardNames, addTransa
       // Create transaction with total
       await addTransaction({
         date: preview.purchase_date || todayStr(),
+        paymentDate: preview.payment_date || undefined,
         description: `Cupom${preview.merchant ? ` — ${preview.merchant}` : ""}`,
         category: categoryToUse,
         type: "expense",
         amount: preview.total,
         ...(preview.creditCard && { creditCard: preview.creditCard }),
-        status: "pending",
+        status: preview.status,
       });
 
       const { error } = await supabase.from("receipts").insert({
