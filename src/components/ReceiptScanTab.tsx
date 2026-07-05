@@ -62,6 +62,8 @@ const ReceiptScanTab = ({ userId, existingCategories, creditCardNames, addTransa
     merchant: string;
     total: number;
     purchase_date: string;
+    payment_date: string;
+    status: "pending" | "paid";
     top_category: string;
     items: ReceiptItem[];
     creditCard: string;
@@ -120,6 +122,8 @@ const ReceiptScanTab = ({ userId, existingCategories, creditCardNames, addTransa
         merchant: parsed.merchant ?? "",
         total: Number(parsed.total ?? 0),
         purchase_date: parsed.purchase_date || todayStr(),
+        payment_date: "",
+        status: "pending",
         top_category: parsed.top_category ?? "",
         items: (parsed.items ?? []) as ReceiptItem[],
         creditCard: "",
@@ -145,12 +149,13 @@ const ReceiptScanTab = ({ userId, existingCategories, creditCardNames, addTransa
       // Create transaction with total
       await addTransaction({
         date: preview.purchase_date || todayStr(),
+        paymentDate: preview.payment_date || undefined,
         description: `Cupom${preview.merchant ? ` — ${preview.merchant}` : ""}`,
         category: categoryToUse,
         type: "expense",
         amount: preview.total,
         ...(preview.creditCard && { creditCard: preview.creditCard }),
-        status: "pending",
+        status: preview.status,
       });
 
       const { error } = await supabase.from("receipts").insert({
@@ -255,8 +260,21 @@ const ReceiptScanTab = ({ userId, existingCategories, creditCardNames, addTransa
                 onChange={(e) => setPreview({ ...preview, total: parseFloat(e.target.value) || 0 })}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
             </div>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Data de pagamento</label>
+              <input type="date" value={preview.payment_date} onChange={(e) => setPreview({ ...preview, payment_date: e.target.value })}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Status</label>
+              <select value={preview.status} onChange={(e) => setPreview({ ...preview, status: e.target.value as "pending" | "paid" })}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                <option value="pending">Pendente</option>
+                <option value="paid">Pago</option>
+              </select>
+            </div>
             <div className="md:col-span-3">
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Pagamento</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Meio de pagamento</label>
               <select value={preview.creditCard} onChange={(e) => setPreview({ ...preview, creditCard: e.target.value })}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
                 <option value="">Dinheiro / Débito</option>
