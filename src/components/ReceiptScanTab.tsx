@@ -122,6 +122,8 @@ const ReceiptScanTab = ({ userId, existingCategories, creditCardNames, addTransa
         merchant: parsed.merchant ?? "",
         total: Number(parsed.total ?? 0),
         purchase_date: parsed.purchase_date || todayStr(),
+        payment_date: "",
+        status: "pending",
         top_category: parsed.top_category ?? "",
         items: (parsed.items ?? []) as ReceiptItem[],
         creditCard: "",
