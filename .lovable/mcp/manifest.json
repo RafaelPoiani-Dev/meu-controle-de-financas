@@ -1,0 +1,210 @@
+{
+  "version": 1,
+  "sdk_version": "0.20.0",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://nhlznqxggksofmgwkhaq.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "controle-financeiro-mcp",
+      "version": "0.1.0",
+      "title": "Controle Financeiro"
+    },
+    "tools": [
+      {
+        "name": "list_transactions",
+        "title": "Listar lançamentos",
+        "description": "Lista lançamentos financeiros do usuário autenticado, com filtros opcionais por intervalo de datas, tipo, categoria e status.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "start_date": {
+              "type": "string",
+              "description": "Data inicial YYYY-MM-DD (inclusive)"
+            },
+            "end_date": {
+              "type": "string",
+              "description": "Data final YYYY-MM-DD (inclusive)"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "income",
+                "expense"
+              ],
+              "description": "Tipo de lançamento"
+            },
+            "category": {
+              "type": "string",
+              "description": "Categoria exata"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "paid"
+              ]
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 100
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "add_transaction",
+        "title": "Adicionar lançamento",
+        "description": "Cria um novo lançamento financeiro (receita ou despesa) para o usuário autenticado.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "date": {
+              "type": "string",
+              "description": "Data do lançamento YYYY-MM-DD"
+            },
+            "description": {
+              "type": "string",
+              "minLength": 1
+            },
+            "category": {
+              "type": "string",
+              "minLength": 1
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "income",
+                "expense"
+              ]
+            },
+            "amount": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "paid"
+              ],
+              "default": "pending"
+            },
+            "payment_date": {
+              "type": "string",
+              "description": "Data de pagamento YYYY-MM-DD"
+            },
+            "credit_card": {
+              "type": "string"
+            },
+            "installments": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "current_installment": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "date",
+            "description",
+            "category",
+            "type",
+            "amount"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_categories",
+        "title": "Listar categorias",
+        "description": "Lista as categorias configuradas pelo usuário (receitas e despesas).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "income",
+                "expense"
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "monthly_summary",
+        "title": "Resumo mensal",
+        "description": "Retorna totais de receitas, despesas, saldo e gasto por categoria para um mês (YYYY-MM). Usa a data de pagamento quando presente, caso contrário a data do lançamento.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "month": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}$",
+              "description": "Mês no formato YYYY-MM"
+            }
+          },
+          "required": [
+            "month"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_credit_cards",
+        "title": "Listar cartões",
+        "description": "Lista os cartões de crédito cadastrados pelo usuário e seus limites.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
