@@ -1,14 +1,18 @@
 import { DollarSign } from "lucide-react";
 import { lovable } from "@/integrations/lovable/index";
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 const Login = () => {
   const [loading, setLoading] = useState(false);
+  const [params] = useSearchParams();
+  const nextParam = params.get("next");
+  const safeNext = nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : null;
 
   const handleGoogleLogin = async () => {
     setLoading(true);
     const { error } = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+      redirect_uri: window.location.origin + (safeNext ?? ""),
     });
     if (error) {
       console.error("Login error:", error);
