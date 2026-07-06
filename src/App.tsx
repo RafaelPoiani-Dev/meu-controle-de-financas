@@ -35,7 +35,16 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   }
   if (user) {
     const params = new URLSearchParams(window.location.search);
-    const next = params.get("next");
+    let next = params.get("next");
+    if (!next) {
+      try {
+        const stored = sessionStorage.getItem("post_login_next");
+        if (stored) {
+          sessionStorage.removeItem("post_login_next");
+          next = stored;
+        }
+      } catch {}
+    }
     const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : "/";
     return <Navigate to={safeNext} replace />;
   }

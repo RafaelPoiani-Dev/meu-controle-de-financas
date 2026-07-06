@@ -11,8 +11,11 @@ const Login = () => {
 
   const handleGoogleLogin = async () => {
     setLoading(true);
+    if (safeNext) {
+      try { sessionStorage.setItem("post_login_next", safeNext); } catch {}
+    }
     const { error } = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin + (safeNext ?? ""),
+      redirect_uri: window.location.origin,
     });
     if (error) {
       console.error("Login error:", error);
