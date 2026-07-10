@@ -513,7 +513,10 @@ const Index = () => {
             creditCardNames={creditCardNames}
             addTransaction={addTransaction}
             addCategory={settings.addCategory}
+            selectedYear={selectedYear}
+            selectedMonth={selectedMonth}
           />
+
         )}
 
         {activeTab === "settings" && (
