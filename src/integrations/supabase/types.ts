@@ -21,6 +21,7 @@ export type Database = {
           image_url: string
           items: Json
           merchant: string | null
+          payment_date: string | null
           purchase_date: string | null
           total: number
           transaction_id: string | null
@@ -33,6 +34,7 @@ export type Database = {
           image_url: string
           items?: Json
           merchant?: string | null
+          payment_date?: string | null
           purchase_date?: string | null
           total?: number
           transaction_id?: string | null
@@ -45,6 +47,7 @@ export type Database = {
           image_url?: string
           items?: Json
           merchant?: string | null
+          payment_date?: string | null
           purchase_date?: string | null
           total?: number
           transaction_id?: string | null
