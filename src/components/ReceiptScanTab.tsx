@@ -32,7 +32,10 @@ interface Props {
   creditCardNames: string[];
   addTransaction: (t: Omit<Transaction, "id">) => Promise<void> | void;
   addCategory: (name: string, type: string) => Promise<void> | void;
+  selectedYear: number;
+  selectedMonth: number;
 }
+
 
 const CATEGORY_COLORS = [
   "hsl(0, 78%, 55%)", "hsl(25, 90%, 55%)", "hsl(45, 100%, 55%)",
@@ -53,7 +56,7 @@ function storagePathFromUrl(url: string): string | null {
   return url;
 }
 
-const ReceiptScanTab = ({ userId, existingCategories, creditCardNames, addTransaction, addCategory }: Props) => {
+const ReceiptScanTab = ({ userId, existingCategories, creditCardNames, addTransaction, addCategory, selectedYear, selectedMonth }: Props) => {
   const [receipts, setReceipts] = useState<ReceiptRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
@@ -201,16 +204,27 @@ const ReceiptScanTab = ({ userId, existingCategories, creditCardNames, addTransa
     setPreview({ ...preview, items: preview.items.filter((_, i) => i !== idx) });
   };
 
-  // Aggregate spending by category across all receipts
+  // Filter receipts by selected month/year (using string manipulation to avoid TZ bugs)
+  const monthKey = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`;
+  const filteredReceipts = useMemo(
+    () => receipts.filter((r) => {
+      const d = r.purchase_date ?? r.created_at.slice(0, 10);
+      return d.startsWith(monthKey);
+    }),
+    [receipts, monthKey]
+  );
+
+  // Aggregate spending by category across filtered receipts
   const spendingByCategory = useMemo(() => {
     const map: Record<string, number> = {};
-    receipts.forEach((r) => {
+    filteredReceipts.forEach((r) => {
       r.items.forEach((it) => {
         map[it.category] = (map[it.category] ?? 0) + Number(it.amount || 0);
       });
     });
     return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-  }, [receipts]);
+  }, [filteredReceipts]);
+
 
   const topCategory = spendingByCategory[0];
 
@@ -322,10 +336,11 @@ const ReceiptScanTab = ({ userId, existingCategories, creditCardNames, addTransa
       )}
 
       {/* Analytics */}
-      {receipts.length > 0 && (
+      {filteredReceipts.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div className="bg-card rounded-lg shadow-card border border-border p-5">
-            <h3 className="text-sm font-bold font-display mb-2">Gastos por Categoria (todos os cupons)</h3>
+            <h3 className="text-sm font-bold font-display mb-2">Gastos por Categoria (mês selecionado)</h3>
+
             {topCategory && (
               <p className="text-xs text-muted-foreground mb-3">
                 Mais gasta: <span className="font-semibold text-foreground">{topCategory.name}</span> — {fmt(topCategory.value)}
@@ -358,14 +373,18 @@ const ReceiptScanTab = ({ userId, existingCategories, creditCardNames, addTransa
 
       {/* List of receipts */}
       <div>
-        <h3 className="text-sm font-bold font-display mb-3">Cupons salvos</h3>
+        <h3 className="text-sm font-bold font-display mb-3">Cupons do mês selecionado</h3>
         {loading ? (
           <p className="text-sm text-muted-foreground">Carregando...</p>
-        ) : receipts.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhum cupom ainda. Envie o primeiro acima!</p>
+        ) : filteredReceipts.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            {receipts.length === 0
+              ? "Nenhum cupom ainda. Envie o primeiro acima!"
+              : "Nenhum cupom neste mês. Selecione outro mês acima."}
+          </p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {receipts.map((r) => (
+            {filteredReceipts.map((r) => (
               <div key={r.id} className="bg-card rounded-lg shadow-card border border-border overflow-hidden">
                 {signedUrls[r.id] ? (
                   <a href={signedUrls[r.id]} target="_blank" rel="noreferrer" className="block bg-muted">
@@ -391,6 +410,7 @@ const ReceiptScanTab = ({ userId, existingCategories, creditCardNames, addTransa
           </div>
         )}
       </div>
+
     </div>
   );
 };
