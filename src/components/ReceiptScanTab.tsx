@@ -177,8 +177,10 @@ const ReceiptScanTab = ({ userId, existingCategories, creditCardNames, addTransa
         total: preview.total,
         items: preview.items as any,
         purchase_date: preview.purchase_date || null,
-      });
+        payment_date: preview.payment_date || null,
+      } as any);
       if (error) throw error;
+
       toast.success("Cupom salvo e lançamento criado!");
       setPreview(null);
       load();
