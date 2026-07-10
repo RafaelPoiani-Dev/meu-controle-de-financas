@@ -22,8 +22,10 @@ interface ReceiptRow {
   total: number;
   items: ReceiptItem[];
   purchase_date: string | null;
+  payment_date: string | null;
   transaction_id: string | null;
   created_at: string;
+
 }
 
 interface Props {
