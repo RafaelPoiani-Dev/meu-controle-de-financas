@@ -74,6 +74,7 @@ const ReceiptScanTab = ({ userId, existingCategories, creditCardNames, addTransa
     creditCard: string;
   } | null>(null);
   const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
+  const [editing, setEditing] = useState<ReceiptRow | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
