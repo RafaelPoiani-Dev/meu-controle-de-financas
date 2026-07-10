@@ -336,10 +336,11 @@ const ReceiptScanTab = ({ userId, existingCategories, creditCardNames, addTransa
       )}
 
       {/* Analytics */}
-      {receipts.length > 0 && (
+      {filteredReceipts.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <div className="bg-card rounded-lg shadow-card border border-border p-5">
-            <h3 className="text-sm font-bold font-display mb-2">Gastos por Categoria (todos os cupons)</h3>
+            <h3 className="text-sm font-bold font-display mb-2">Gastos por Categoria (mês selecionado)</h3>
+
             {topCategory && (
               <p className="text-xs text-muted-foreground mb-3">
                 Mais gasta: <span className="font-semibold text-foreground">{topCategory.name}</span> — {fmt(topCategory.value)}
