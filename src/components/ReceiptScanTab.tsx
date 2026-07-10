@@ -373,14 +373,18 @@ const ReceiptScanTab = ({ userId, existingCategories, creditCardNames, addTransa
 
       {/* List of receipts */}
       <div>
-        <h3 className="text-sm font-bold font-display mb-3">Cupons salvos</h3>
+        <h3 className="text-sm font-bold font-display mb-3">Cupons do mês selecionado</h3>
         {loading ? (
           <p className="text-sm text-muted-foreground">Carregando...</p>
-        ) : receipts.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhum cupom ainda. Envie o primeiro acima!</p>
+        ) : filteredReceipts.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            {receipts.length === 0
+              ? "Nenhum cupom ainda. Envie o primeiro acima!"
+              : "Nenhum cupom neste mês. Selecione outro mês acima."}
+          </p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {receipts.map((r) => (
+            {filteredReceipts.map((r) => (
               <div key={r.id} className="bg-card rounded-lg shadow-card border border-border overflow-hidden">
                 {signedUrls[r.id] ? (
                   <a href={signedUrls[r.id]} target="_blank" rel="noreferrer" className="block bg-muted">
@@ -406,6 +410,7 @@ const ReceiptScanTab = ({ userId, existingCategories, creditCardNames, addTransa
           </div>
         )}
       </div>
+
     </div>
   );
 };
