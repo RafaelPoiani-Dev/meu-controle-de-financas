@@ -407,7 +407,7 @@ const ReceiptScanTab = ({ userId, existingCategories, creditCardNames, addTransa
                       <Trash2 size={14} />
                     </button>
                   </div>
-                  <p className="text-xs text-muted-foreground">{r.purchase_date ?? r.created_at.slice(0, 10)} • {r.items.length} itens</p>
+                  <p className="text-xs text-muted-foreground">{r.payment_date ?? r.purchase_date ?? r.created_at.slice(0, 10)} • {r.items.length} itens</p>
                   <p className="text-sm font-bold text-primary">{fmt(Number(r.total))}</p>
                 </div>
               </div>
