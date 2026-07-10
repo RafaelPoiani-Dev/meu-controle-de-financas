@@ -208,15 +208,16 @@ const ReceiptScanTab = ({ userId, existingCategories, creditCardNames, addTransa
     setPreview({ ...preview, items: preview.items.filter((_, i) => i !== idx) });
   };
 
-  // Filter receipts by selected month/year (using string manipulation to avoid TZ bugs)
+  // Filter receipts by selected month/year using PAYMENT date (falls back to purchase date for legacy rows)
   const monthKey = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`;
   const filteredReceipts = useMemo(
     () => receipts.filter((r) => {
-      const d = r.purchase_date ?? r.created_at.slice(0, 10);
+      const d = r.payment_date ?? r.purchase_date ?? r.created_at.slice(0, 10);
       return d.startsWith(monthKey);
     }),
     [receipts, monthKey]
   );
+
 
   // Aggregate spending by category across filtered receipts
   const spendingByCategory = useMemo(() => {
