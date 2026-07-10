@@ -56,7 +56,7 @@ function storagePathFromUrl(url: string): string | null {
   return url;
 }
 
-const ReceiptScanTab = ({ userId, existingCategories, creditCardNames, addTransaction, addCategory }: Props) => {
+const ReceiptScanTab = ({ userId, existingCategories, creditCardNames, addTransaction, addCategory, selectedYear, selectedMonth }: Props) => {
   const [receipts, setReceipts] = useState<ReceiptRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
