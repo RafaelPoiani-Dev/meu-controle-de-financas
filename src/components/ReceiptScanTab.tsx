@@ -32,7 +32,10 @@ interface Props {
   creditCardNames: string[];
   addTransaction: (t: Omit<Transaction, "id">) => Promise<void> | void;
   addCategory: (name: string, type: string) => Promise<void> | void;
+  selectedYear: number;
+  selectedMonth: number;
 }
+
 
 const CATEGORY_COLORS = [
   "hsl(0, 78%, 55%)", "hsl(25, 90%, 55%)", "hsl(45, 100%, 55%)",
