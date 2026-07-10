@@ -22,8 +22,10 @@ interface ReceiptRow {
   total: number;
   items: ReceiptItem[];
   purchase_date: string | null;
+  payment_date: string | null;
   transaction_id: string | null;
   created_at: string;
+
 }
 
 interface Props {
@@ -175,8 +177,10 @@ const ReceiptScanTab = ({ userId, existingCategories, creditCardNames, addTransa
         total: preview.total,
         items: preview.items as any,
         purchase_date: preview.purchase_date || null,
-      });
+        payment_date: preview.payment_date || null,
+      } as any);
       if (error) throw error;
+
       toast.success("Cupom salvo e lançamento criado!");
       setPreview(null);
       load();
@@ -204,15 +208,16 @@ const ReceiptScanTab = ({ userId, existingCategories, creditCardNames, addTransa
     setPreview({ ...preview, items: preview.items.filter((_, i) => i !== idx) });
   };
 
-  // Filter receipts by selected month/year (using string manipulation to avoid TZ bugs)
+  // Filter receipts by selected month/year using PAYMENT date (falls back to purchase date for legacy rows)
   const monthKey = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`;
   const filteredReceipts = useMemo(
     () => receipts.filter((r) => {
-      const d = r.purchase_date ?? r.created_at.slice(0, 10);
+      const d = r.payment_date ?? r.purchase_date ?? r.created_at.slice(0, 10);
       return d.startsWith(monthKey);
     }),
     [receipts, monthKey]
   );
+
 
   // Aggregate spending by category across filtered receipts
   const spendingByCategory = useMemo(() => {
@@ -402,7 +407,7 @@ const ReceiptScanTab = ({ userId, existingCategories, creditCardNames, addTransa
                       <Trash2 size={14} />
                     </button>
                   </div>
-                  <p className="text-xs text-muted-foreground">{r.purchase_date ?? r.created_at.slice(0, 10)} • {r.items.length} itens</p>
+                  <p className="text-xs text-muted-foreground">{r.payment_date ?? r.purchase_date ?? r.created_at.slice(0, 10)} • {r.items.length} itens</p>
                   <p className="text-sm font-bold text-primary">{fmt(Number(r.total))}</p>
                 </div>
               </div>
