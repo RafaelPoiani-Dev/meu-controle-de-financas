@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Camera, Loader2, Sparkles, Trash2, Receipt as ReceiptIcon, Image as ImageIcon } from "lucide-react";
+import { Camera, Loader2, Sparkles, Trash2, Receipt as ReceiptIcon, Image as ImageIcon, Pencil, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
