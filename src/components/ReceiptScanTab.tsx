@@ -422,6 +422,98 @@ const ReceiptScanTab = ({ userId, existingCategories, creditCardNames, addTransa
         )}
       </div>
 
+      {editing && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setEditing(null)}>
+          <div className="bg-card rounded-lg shadow-lg border border-border p-5 w-full max-w-2xl max-h-[90vh] overflow-y-auto space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold font-display">Editar cupom</h3>
+              <button onClick={() => setEditing(null)} className="text-muted-foreground hover:text-foreground"><X size={18} /></button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Estabelecimento</label>
+                <input value={editing.merchant ?? ""} onChange={(e) => setEditing({ ...editing, merchant: e.target.value })}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Data de compra</label>
+                <input type="date" value={editing.purchase_date ?? ""} onChange={(e) => setEditing({ ...editing, purchase_date: e.target.value })}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Data de pagamento</label>
+                <input type="date" value={editing.payment_date ?? ""} onChange={(e) => setEditing({ ...editing, payment_date: e.target.value })}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Total (R$)</label>
+                <input type="number" step="0.01" value={editing.total}
+                  onChange={(e) => setEditing({ ...editing, total: parseFloat(e.target.value) || 0 })}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground mb-2">Itens ({editing.items.length})</p>
+              <div className="space-y-2 max-h-72 overflow-y-auto">
+                {editing.items.map((it, i) => (
+                  <div key={i} className="grid grid-cols-12 gap-2 items-center bg-muted/40 rounded-md p-2">
+                    <input value={it.name}
+                      onChange={(e) => setEditing({ ...editing, items: editing.items.map((x, j) => j === i ? { ...x, name: e.target.value } : x) })}
+                      className="col-span-5 rounded border border-input bg-background px-2 py-1 text-xs" />
+                    <input value={it.category}
+                      onChange={(e) => setEditing({ ...editing, items: editing.items.map((x, j) => j === i ? { ...x, category: e.target.value } : x) })}
+                      className="col-span-4 rounded border border-input bg-background px-2 py-1 text-xs" placeholder="Categoria" />
+                    <input type="number" step="0.01" value={it.amount}
+                      onChange={(e) => setEditing({ ...editing, items: editing.items.map((x, j) => j === i ? { ...x, amount: parseFloat(e.target.value) || 0 } : x) })}
+                      className="col-span-2 rounded border border-input bg-background px-2 py-1 text-xs text-right" />
+                    <button onClick={() => setEditing({ ...editing, items: editing.items.filter((_, j) => j !== i) })} className="col-span-1 text-destructive hover:opacity-70 flex justify-center">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={() => setEditing({ ...editing, items: [...editing.items, { name: "", category: "", amount: 0 }] })}
+                className="mt-2 text-xs text-primary hover:underline"
+              >+ Adicionar item</button>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setEditing(null)} className="px-4 py-2 rounded-lg border border-border text-sm">Cancelar</button>
+              <button
+                onClick={async () => {
+                  try {
+                    // Persist new categories from edited items
+                    const knownLower = new Set(existingCategories.map((c) => c.toLowerCase()));
+                    const toCreate = new Set<string>();
+                    editing.items.forEach((it) => {
+                      const c = (it.category || "").trim();
+                      if (c && !knownLower.has(c.toLowerCase())) toCreate.add(c);
+                    });
+                    for (const name of toCreate) await addCategory(name, "expense");
+
+                    const { error } = await supabase.from("receipts").update({
+                      merchant: editing.merchant,
+                      total: editing.total,
+                      items: editing.items as any,
+                      purchase_date: editing.purchase_date || null,
+                      payment_date: editing.payment_date || null,
+                    } as any).eq("id", editing.id);
+                    if (error) throw error;
+                    toast.success("Cupom atualizado!");
+                    setEditing(null);
+                    load();
+                  } catch (e: any) {
+                    toast.error(e?.message ?? "Erro ao salvar");
+                  }
+                }}
+                className="gradient-warm text-primary-foreground px-5 py-2 rounded-lg text-sm font-semibold shadow-warm"
+              >
+                Salvar alterações
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
