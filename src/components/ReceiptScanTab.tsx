@@ -404,9 +404,14 @@ const ReceiptScanTab = ({ userId, existingCategories, creditCardNames, addTransa
                 <div className="p-3 space-y-1">
                   <div className="flex justify-between items-start gap-2">
                     <p className="font-semibold text-sm truncate">{r.merchant ?? "Cupom"}</p>
-                    <button onClick={() => deleteReceipt(r)} className="text-destructive hover:opacity-70">
-                      <Trash2 size={14} />
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button onClick={() => setEditing(r)} aria-label="Editar" className="text-muted-foreground hover:text-primary">
+                        <Pencil size={14} />
+                      </button>
+                      <button onClick={() => deleteReceipt(r)} aria-label="Excluir" className="text-destructive hover:opacity-70">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
                   <p className="text-xs text-muted-foreground">{r.payment_date ?? r.purchase_date ?? r.created_at.slice(0, 10)} • {r.items.length} itens</p>
                   <p className="text-sm font-bold text-primary">{fmt(Number(r.total))}</p>
