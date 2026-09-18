@@ -56,9 +56,15 @@ Deno.serve(async (req) => {
     if (!csv) {
       console.error("sheet fetch failed", { lastStatus, hasGid: !!gid });
       return new Response(
-        JSON.stringify({ error: "Não consegui abrir a planilha. No Google Sheets, clique em Compartilhar e escolha 'Qualquer pessoa com o link' como Leitor, depois copie o link novamente." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        JSON.stringify({
+          error:
+            lastStatus === 401 || lastStatus === 403
+              ? "A planilha está privada. No Google Sheets, clique em Compartilhar, escolha 'Qualquer pessoa com o link' como Leitor e copie o link novamente."
+              : "Não consegui abrir a planilha. Confira se o link é de uma planilha do Google Sheets e se ela está compartilhada por link.",
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
+
     }
 
 
