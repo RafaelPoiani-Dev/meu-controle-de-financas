@@ -74,15 +74,23 @@ const Index = () => {
 
   useEffect(() => {
     if (!user) return;
-    supabase.functions
-      .invoke("get-spreadsheet-url")
-      .then(({ data }) => {
-        if (data?.url) setSpreadsheetUrl(data.url);
-      })
-      .catch(() => {
-        /* planilha não configurada ou sessão indisponível */
+    let cancelled = false;
+    (async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token || cancelled) return;
+      const { data, error } = await supabase.functions.invoke("get-spreadsheet-url", {
+        headers: { Authorization: `Bearer ${token}` },
       });
+      if (!cancelled && !error && data?.url) setSpreadsheetUrl(data.url);
+    })().catch(() => {
+      /* planilha não configurada ou sessão indisponível */
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
+
 
 
   const now = new Date();
