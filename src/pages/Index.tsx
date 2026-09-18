@@ -14,8 +14,12 @@ import {
   FileText,
   Filter,
   Receipt,
+  FileSpreadsheet,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import SheetImportDialog from "../components/SheetImportDialog";
 import ReceiptScanTab from "../components/ReceiptScanTab";
+
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import SummaryCard from "../components/SummaryCard";
