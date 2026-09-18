@@ -64,6 +64,8 @@ const Index = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filters, setFilters] = useState<FilterState>(emptyFilters);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
+  const [sheetImportOpen, setSheetImportOpen] = useState(false);
+
   const [selectedCardFilter, setSelectedCardFilter] = useState<string[]>([]);
   const editingTransaction = useMemo(
     () => transactions.find((t) => t.id === editingId) ?? null,
