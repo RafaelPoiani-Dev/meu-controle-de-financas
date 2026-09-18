@@ -67,10 +67,17 @@ const Index = () => {
   );
 
   useEffect(() => {
-    supabase.functions.invoke("get-spreadsheet-url").then(({ data }) => {
-      if (data?.url) setSpreadsheetUrl(data.url);
-    });
-  }, []);
+    if (!user) return;
+    supabase.functions
+      .invoke("get-spreadsheet-url")
+      .then(({ data }) => {
+        if (data?.url) setSpreadsheetUrl(data.url);
+      })
+      .catch(() => {
+        /* planilha não configurada ou sessão indisponível */
+      });
+  }, [user]);
+
 
   const now = new Date();
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
