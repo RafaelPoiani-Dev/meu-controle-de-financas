@@ -25,22 +25,42 @@ Deno.serve(async (req) => {
       });
     }
 
-    const csvUrl = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
-    const sheetRes = await fetch(csvUrl, { redirect: "follow" });
-    const csv = await sheetRes.text();
+    const gidMatch = url.match(/[#&?]gid=([0-9]+)/);
+    const gid = gidMatch ? gidMatch[1] : null;
 
-    if (!sheetRes.ok || csv.trimStart().startsWith("<")) {
+    const candidates: string[] = [];
+    if (gid) {
+      candidates.push(`https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&gid=${gid}`);
+      candidates.push(`https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=${gid}`);
+    }
+    candidates.push(`https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`);
+    candidates.push(`https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv`);
+    candidates.push(`https://docs.google.com/spreadsheets/d/${id}/export?format=csv`);
+
+    let csv = "";
+    let lastStatus = 0;
+    for (const candidate of candidates) {
+      try {
+        const r = await fetch(candidate, { redirect: "follow" });
+        lastStatus = r.status;
+        const text = await r.text();
+        if (r.ok && !text.trimStart().startsWith("<") && text.trim().length >= 5) {
+          csv = text;
+          break;
+        }
+      } catch (_) {
+        // tenta o próximo formato
+      }
+    }
+
+    if (!csv) {
+      console.error("sheet fetch failed", { lastStatus, hasGid: !!gid });
       return new Response(
-        JSON.stringify({ error: "Não consegui abrir a planilha. Verifique se ela está compartilhada como 'qualquer pessoa com o link pode ver' e se existe a aba Lançamentos." }),
+        JSON.stringify({ error: "Não consegui abrir a planilha. No Google Sheets, clique em Compartilhar e escolha 'Qualquer pessoa com o link' como Leitor, depois copie o link novamente." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    if (csv.trim().length < 5) {
-      return new Response(JSON.stringify({ error: "A aba Lançamentos está vazia." }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
     const apiKey = Deno.env.get("LOVABLE_API_KEY");
     if (!apiKey) {
