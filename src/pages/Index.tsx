@@ -14,8 +14,12 @@ import {
   FileText,
   Filter,
   Receipt,
+  FileSpreadsheet,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import SheetImportDialog from "../components/SheetImportDialog";
 import ReceiptScanTab from "../components/ReceiptScanTab";
+
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import SummaryCard from "../components/SummaryCard";
@@ -60,6 +64,8 @@ const Index = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filters, setFilters] = useState<FilterState>(emptyFilters);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
+  const [sheetImportOpen, setSheetImportOpen] = useState(false);
+
   const [selectedCardFilter, setSelectedCardFilter] = useState<string[]>([]);
   const editingTransaction = useMemo(
     () => transactions.find((t) => t.id === editingId) ?? null,
@@ -514,17 +520,24 @@ const Index = () => {
         })()}
 
         {activeTab === "receipts" && (
-          <ReceiptScanTab
-            userId={user?.id}
-            existingCategories={settings.categories.filter((c) => c.type === "expense").map((c) => c.name)}
-            creditCardNames={creditCardNames}
-            addTransaction={addTransaction}
-            addCategory={settings.addCategory}
-            selectedYear={selectedYear}
-            selectedMonth={selectedMonth}
-          />
-
+          <div className="space-y-4">
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={() => setSheetImportOpen(true)}>
+                <FileSpreadsheet className="mr-2 h-4 w-4" /> Importar planilha do Google
+              </Button>
+            </div>
+            <ReceiptScanTab
+              userId={user?.id}
+              existingCategories={settings.categories.filter((c) => c.type === "expense").map((c) => c.name)}
+              creditCardNames={creditCardNames}
+              addTransaction={addTransaction}
+              addCategory={settings.addCategory}
+              selectedYear={selectedYear}
+              selectedMonth={selectedMonth}
+            />
+          </div>
         )}
+
 
         {activeTab === "settings" && (
           <SettingsTab
@@ -586,6 +599,16 @@ const Index = () => {
           for (const it of items) await addTransaction(it);
         }}
       />
+
+      <SheetImportDialog
+        open={sheetImportOpen}
+        onOpenChange={setSheetImportOpen}
+        existingCategories={settings.categories.map((c) => ({ name: c.name, type: c.type }))}
+        transactions={transactions}
+        addTransaction={addTransaction}
+        addCategory={settings.addCategory}
+      />
+
     </div>
   );
 };
