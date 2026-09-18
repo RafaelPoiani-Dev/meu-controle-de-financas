@@ -599,6 +599,16 @@ const Index = () => {
           for (const it of items) await addTransaction(it);
         }}
       />
+
+      <SheetImportDialog
+        open={sheetImportOpen}
+        onOpenChange={setSheetImportOpen}
+        existingCategories={settings.categories.map((c) => ({ name: c.name, type: c.type }))}
+        transactions={transactions}
+        addTransaction={addTransaction}
+        addCategory={settings.addCategory}
+      />
+
     </div>
   );
 };
