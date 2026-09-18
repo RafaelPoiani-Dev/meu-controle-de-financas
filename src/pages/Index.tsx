@@ -514,17 +514,24 @@ const Index = () => {
         })()}
 
         {activeTab === "receipts" && (
-          <ReceiptScanTab
-            userId={user?.id}
-            existingCategories={settings.categories.filter((c) => c.type === "expense").map((c) => c.name)}
-            creditCardNames={creditCardNames}
-            addTransaction={addTransaction}
-            addCategory={settings.addCategory}
-            selectedYear={selectedYear}
-            selectedMonth={selectedMonth}
-          />
-
+          <div className="space-y-4">
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={() => setSheetImportOpen(true)}>
+                <FileSpreadsheet className="mr-2 h-4 w-4" /> Importar planilha do Google
+              </Button>
+            </div>
+            <ReceiptScanTab
+              userId={user?.id}
+              existingCategories={settings.categories.filter((c) => c.type === "expense").map((c) => c.name)}
+              creditCardNames={creditCardNames}
+              addTransaction={addTransaction}
+              addCategory={settings.addCategory}
+              selectedYear={selectedYear}
+              selectedMonth={selectedMonth}
+            />
+          </div>
         )}
+
 
         {activeTab === "settings" && (
           <SettingsTab
