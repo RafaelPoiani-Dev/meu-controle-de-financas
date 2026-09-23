@@ -15,9 +15,11 @@ import {
   Filter,
   Receipt,
   FileSpreadsheet,
+  ScanLine,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SheetImportDialog from "../components/SheetImportDialog";
+import ScreenshotImportDialog from "../components/ScreenshotImportDialog";
 import ReceiptScanTab from "../components/ReceiptScanTab";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -65,6 +67,7 @@ const Index = () => {
   const [filters, setFilters] = useState<FilterState>(emptyFilters);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
   const [sheetImportOpen, setSheetImportOpen] = useState(false);
+  const [screenshotImportOpen, setScreenshotImportOpen] = useState(false);
 
   const [selectedCardFilter, setSelectedCardFilter] = useState<string[]>([]);
   const editingTransaction = useMemo(
@@ -529,7 +532,10 @@ const Index = () => {
 
         {activeTab === "receipts" && (
           <div className="space-y-4">
-            <div className="flex justify-end">
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button variant="outline" onClick={() => setScreenshotImportOpen(true)}>
+                <ScanLine className="mr-2 h-4 w-4" /> Ler print da planilha
+              </Button>
               <Button variant="outline" onClick={() => setSheetImportOpen(true)}>
                 <FileSpreadsheet className="mr-2 h-4 w-4" /> Importar planilha do Google
               </Button>
@@ -612,6 +618,16 @@ const Index = () => {
         open={sheetImportOpen}
         onOpenChange={setSheetImportOpen}
         existingCategories={settings.categories.map((c) => ({ name: c.name, type: c.type }))}
+        transactions={transactions}
+        addTransaction={addTransaction}
+        addCategory={settings.addCategory}
+      />
+
+      <ScreenshotImportDialog
+        open={screenshotImportOpen}
+        onOpenChange={setScreenshotImportOpen}
+        existingCategories={settings.categories.map((c) => ({ name: c.name, type: c.type }))}
+        creditCardNames={creditCardNames}
         transactions={transactions}
         addTransaction={addTransaction}
         addCategory={settings.addCategory}
