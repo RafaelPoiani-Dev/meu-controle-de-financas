@@ -15,6 +15,7 @@ import {
   Filter,
   Receipt,
   FileSpreadsheet,
+  ScanLine,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SheetImportDialog from "../components/SheetImportDialog";
