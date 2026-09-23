@@ -67,6 +67,7 @@ const Index = () => {
   const [filters, setFilters] = useState<FilterState>(emptyFilters);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
   const [sheetImportOpen, setSheetImportOpen] = useState(false);
+  const [screenshotImportOpen, setScreenshotImportOpen] = useState(false);
 
   const [selectedCardFilter, setSelectedCardFilter] = useState<string[]>([]);
   const editingTransaction = useMemo(
