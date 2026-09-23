@@ -623,6 +623,16 @@ const Index = () => {
         addCategory={settings.addCategory}
       />
 
+      <ScreenshotImportDialog
+        open={screenshotImportOpen}
+        onOpenChange={setScreenshotImportOpen}
+        existingCategories={settings.categories.map((c) => ({ name: c.name, type: c.type }))}
+        creditCardNames={creditCardNames}
+        transactions={transactions}
+        addTransaction={addTransaction}
+        addCategory={settings.addCategory}
+      />
+
     </div>
   );
 };
