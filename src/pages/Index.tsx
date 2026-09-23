@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SheetImportDialog from "../components/SheetImportDialog";
+import ScreenshotImportDialog from "../components/ScreenshotImportDialog";
 import ReceiptScanTab from "../components/ReceiptScanTab";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
