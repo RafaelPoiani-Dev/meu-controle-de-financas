@@ -529,7 +529,10 @@ const Index = () => {
 
         {activeTab === "receipts" && (
           <div className="space-y-4">
-            <div className="flex justify-end">
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button variant="outline" onClick={() => setScreenshotImportOpen(true)}>
+                <ScanLine className="mr-2 h-4 w-4" /> Ler print da planilha
+              </Button>
               <Button variant="outline" onClick={() => setSheetImportOpen(true)}>
                 <FileSpreadsheet className="mr-2 h-4 w-4" /> Importar planilha do Google
               </Button>
