@@ -390,6 +390,13 @@ export default function ScreenshotImportDialog({
                         {e.status === "pending" ? "Pendente" : "Pago"}
                         {duplicate ? " · já existe no app" : ""}
                       </p>
+                      {e.installments && e.installments > 1 && (
+                        <p className="text-xs font-semibold text-primary">
+                          Compra parcelada em {e.installments}x · lança a partir da parcela{" "}
+                          {e.current_installment || 1}/{e.installments} e segue nos próximos meses
+                        </p>
+                      )}
+
                     </div>
                   </div>
                 );
