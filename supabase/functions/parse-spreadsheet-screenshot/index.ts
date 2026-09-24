@@ -64,7 +64,7 @@ Regras obrigatórias:
   * preencha installments com o TOTAL (8) e current_installment com a parcela daquela linha (3);
   * REMOVA o sufixo "(3/8)" do texto de "description" — devolva apenas o nome limpo da compra;
   * amount é o valor de UMA parcela;
-  * devolva APENAS UMA linha por compra parcelada, a da MENOR parcela visível nos prints. NUNCA repita a mesma compra parcelada em vários meses: o aplicativo projeta sozinho as parcelas seguintes.
+  * devolva APENAS UMA linha por compra parcelada, a da MENOR parcela visível nos prints. NUNCA repita a mesma compra parcelada em vários meses: o aplicativo projeta sozinho as parcelas seguintes.`;
 
     const content: unknown[] = [
       { type: "text", text: "Extraia todos os lançamentos destes prints da planilha." },
