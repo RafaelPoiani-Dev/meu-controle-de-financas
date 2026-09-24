@@ -123,14 +123,34 @@ export default function ScreenshotImportDialog({
       if (data?.error) throw new Error(data.error);
       const list: ScreenshotEntry[] = (data?.entries ?? [])
         .filter((e: ScreenshotEntry) => e?.description && Number(e.amount) > 0)
-        .map((e: ScreenshotEntry) => ({
-          ...e,
-          type: e.type === "income" ? "income" : "expense",
-          amount: Number(e.amount),
-          date: e.date || e.payment_date,
-          payment_date: e.payment_date || e.date,
-          category: (e.category || "Outros").trim(),
-        }));
+        .map((e: ScreenshotEntry) => {
+          let description = String(e.description).trim();
+          let installments = Number(e.installments ?? 0) || 0;
+          let current = Number(e.current_installment ?? 0) || 0;
+          const m = description.match(/\((\d+)\s*\/\s*(\d+)\)\s*$/);
+          if (m) {
+            if (!installments) installments = Number(m[2]);
+            if (!current) current = Number(m[1]);
+            description = description.replace(/\s*\(\d+\s*\/\s*\d+\)\s*$/, "").trim();
+          }
+          if (installments <= 1) {
+            installments = 0;
+            current = 0;
+          } else if (current < 1) {
+            current = 1;
+          }
+          return {
+            ...e,
+            description,
+            type: e.type === "income" ? "income" : "expense",
+            amount: Number(e.amount),
+            date: e.date || e.payment_date,
+            payment_date: e.payment_date || e.date,
+            category: (e.category || "Outros").trim(),
+            installments: installments || undefined,
+            current_installment: installments ? current : undefined,
+          } as ScreenshotEntry;
+        });
       if (!list.length) {
         toast.error("Não encontrei lançamentos nos prints enviados.");
         return;
