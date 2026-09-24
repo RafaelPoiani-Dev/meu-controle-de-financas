@@ -7,39 +7,52 @@ export interface ExpandedTransaction extends Transaction {
   installmentYear?: number;
 }
 
+// Adds N months to a YYYY-MM-DD string without any timezone conversion.
+function addMonths(dateStr: string, monthsToAdd: number): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  if (!y || !m || !d) return dateStr;
+  const total = y * 12 + (m - 1) + monthsToAdd;
+  const newYear = Math.floor(total / 12);
+  const newMonth = (total % 12) + 1;
+  const lastDay = new Date(newYear, newMonth, 0).getDate();
+  const newDay = Math.min(d, lastDay);
+  return `${newYear}-${String(newMonth).padStart(2, "0")}-${String(newDay).padStart(2, "0")}`;
+}
+
+// Removes a trailing "(3/8)" suffix so we never duplicate it.
+function baseDescription(description: string): string {
+  return description.replace(/\s*\(\d+\s*\/\s*\d+\)\s*$/, "").trim();
+}
+
 /**
- * Expands installment transactions into virtual entries for each month.
- * A 9x installment starting in January will produce entries for Jan-Sep.
+ * Expands installment transactions into virtual entries for each remaining month.
+ * A purchase stored as installment 3 of 8 produces 3/8 in its own month and 4/8..8/8 ahead.
  */
 export function expandInstallments(transactions: Transaction[]): ExpandedTransaction[] {
   const result: ExpandedTransaction[] = [];
 
   for (const t of transactions) {
-    if (t.installments && t.installments > 1) {
-      // Use paymentDate as the base for installment months when available
-      const baseDate = t.paymentDate ? new Date(t.paymentDate) : new Date(t.date);
-      const startMonth = baseDate.getMonth();
-      const startYear = baseDate.getFullYear();
-      const purchaseDate = new Date(t.date);
+    const total = t.installments ?? 0;
+    if (total > 1) {
+      const base = t.paymentDate || t.date;
+      const start = Math.min(Math.max(t.currentInstallment || 1, 1), total);
+      const label = baseDescription(t.description);
 
-      for (let i = 0; i < t.installments; i++) {
-        const installmentDate = new Date(startYear, startMonth + i, baseDate.getDate());
-        // Clamp to last day of month if needed
-        if (installmentDate.getDate() !== baseDate.getDate()) {
-          installmentDate.setDate(0);
-        }
+      for (let n = start; n <= total; n++) {
+        const paymentDate = addMonths(base, n - start);
+        const [py, pm] = paymentDate.split("-").map(Number);
 
         result.push({
           ...t,
-          id: i === 0 ? t.id : `${t.id}_inst_${i + 1}`,
+          id: n === start ? t.id : `${t.id}_inst_${n}`,
           originalId: t.id,
-          currentInstallment: i + 1,
-          date: purchaseDate.toISOString().split("T")[0],
-          paymentDate: installmentDate.toISOString().split("T")[0],
-          description: `${t.description} (${i + 1}/${t.installments})`,
-          isVirtual: i !== 0,
-          installmentMonth: installmentDate.getMonth(),
-          installmentYear: installmentDate.getFullYear(),
+          currentInstallment: n,
+          date: t.date,
+          paymentDate,
+          description: `${label} (${n}/${total})`,
+          isVirtual: n !== start,
+          installmentMonth: pm - 1,
+          installmentYear: py,
         });
       }
     } else {
@@ -49,6 +62,7 @@ export function expandInstallments(transactions: Transaction[]): ExpandedTransac
 
   return result;
 }
+
 
 /**
  * Filters expanded transactions by month/year.

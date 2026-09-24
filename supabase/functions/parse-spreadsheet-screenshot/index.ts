@@ -59,7 +59,12 @@ Regras obrigatórias:
 - category: prefira uma destas categorias já existentes: ${categoriesList}. Só crie uma nova se realmente nenhuma servir.
 - credit_card: use um destes quando a linha indicar cartão: ${cardsList}. Caso contrário deixe vazio.
 - status: se o print indicar pago/quitado/ok use "paid"; se indicar pendente/em aberto use "pending". Se não houver indicação, use "paid" quando payment_date for hoje (${today}) ou anterior, e "pending" quando for futura.
-- installments/current_installment: preencha só quando o print mostrar parcelas (ex.: 3/12 => installments 12, current_installment 3).`;
+- DESCRIÇÃO (regra crítica): a planilha pode ter uma coluna "OBS" (observação/detalhe) e uma coluna "Descrição". SEMPRE use o texto da coluna OBS como "description". Só use o texto da coluna "Descrição" quando a OBS estiver vazia ou não existir naquela linha. Nunca junte as duas.
+- PARCELAS (regra crítica): quando a linha indicar parcelamento (ex.: "1/8", "3 de 6", coluna Parcela ou Parcelas):
+  * preencha installments com o TOTAL (8) e current_installment com a parcela daquela linha (3);
+  * REMOVA o sufixo "(3/8)" do texto de "description" — devolva apenas o nome limpo da compra;
+  * amount é o valor de UMA parcela;
+  * devolva APENAS UMA linha por compra parcelada, a da MENOR parcela visível nos prints. NUNCA repita a mesma compra parcelada em vários meses: o aplicativo projeta sozinho as parcelas seguintes.`;
 
     const content: unknown[] = [
       { type: "text", text: "Extraia todos os lançamentos destes prints da planilha." },
@@ -145,11 +150,53 @@ Regras obrigatórias:
     }
 
     const parsed = JSON.parse(call.function.arguments);
-    const entries = (parsed.entries ?? []).map((e: Record<string, unknown>) => {
+    const raw = (parsed.entries ?? []).map((e: Record<string, unknown>) => {
       const date = String(e.date ?? "");
       const paymentDate = String(e.payment_date ?? "") || date;
-      return { ...e, date: date || paymentDate, payment_date: paymentDate };
+      let description = String(e.description ?? "").trim();
+      let installments = Number(e.installments ?? 0) || 0;
+      let current = Number(e.current_installment ?? 0) || 0;
+
+      // Recover "(3/8)" left inside the description and strip it away.
+      const match = description.match(/\((\d+)\s*\/\s*(\d+)\)\s*$/);
+      if (match) {
+        if (!installments) installments = Number(match[2]);
+        if (!current) current = Number(match[1]);
+        description = description.replace(/\s*\(\d+\s*\/\s*\d+\)\s*$/, "").trim();
+      }
+      if (installments <= 1) {
+        installments = 0;
+        current = 0;
+      } else if (current < 1) {
+        current = 1;
+      }
+
+      return {
+        ...e,
+        description,
+        date: date || paymentDate,
+        payment_date: paymentDate,
+        installments: installments || undefined,
+        current_installment: installments ? current : undefined,
+      };
     });
+
+    // Keep a single row per installment purchase: the earliest instalment seen.
+    const byKey = new Map<string, Record<string, unknown>>();
+    const entries: Record<string, unknown>[] = [];
+    for (const e of raw) {
+      if (!e.installments) {
+        entries.push(e);
+        continue;
+      }
+      const key = `${String(e.description).toLowerCase()}|${e.installments}|${Number(e.amount).toFixed(2)}|${e.credit_card ?? ""}`;
+      const existing = byKey.get(key);
+      if (!existing || Number(e.current_installment) < Number(existing.current_installment)) {
+        byKey.set(key, e);
+      }
+    }
+    entries.push(...byKey.values());
+
 
     return new Response(JSON.stringify({ entries }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
