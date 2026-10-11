@@ -224,6 +224,19 @@ export function useUserSettings(userId: string | undefined) {
     await localUpsert("user_dashboard_fields", { ...stripFlags(row), label, field_type: fieldType, category: category ?? null, updated_at: nowIso() });
   }, []);
 
+  // Create any missing built-in dashboard cards (no toast; idempotent by field_type).
+  const ensureDashboardFields = useCallback(async (specs: { label: string; fieldType: string }[]) => {
+    if (!userId) return;
+    const rows = (await db.user_dashboard_fields.where("user_id").equals(userId).toArray());
+    const existing = new Set(rows.map((r) => r.field_type));
+    let order = rows.filter((r) => !r._deleted).length;
+    const now = nowIso();
+    for (const spec of specs) {
+      if (existing.has(spec.fieldType)) continue;
+      await localUpsert("user_dashboard_fields", { id: newId(), user_id: userId, label: spec.label, field_type: spec.fieldType, visible: true, sort_order: order++, category: null, created_at: now, updated_at: now });
+    }
+  }, [userId]);
+
   const reorderDashboardFields = useCallback(async (orderedIds: string[]) => {
     const now = nowIso();
     for (let idx = 0; idx < orderedIds.length; idx++) {
@@ -238,6 +251,6 @@ export function useUserSettings(userId: string | undefined) {
     categories, creditCards, dashboardFields, loading, transactionTypes,
     addCategory, deleteCategory, updateCategoryName,
     addCard, deleteCard, updateCardLimit, updateCardName,
-    addDashboardField, deleteDashboardField, toggleFieldVisibility, updateDashboardField, reorderDashboardFields,
+    addDashboardField, deleteDashboardField, toggleFieldVisibility, updateDashboardField, reorderDashboardFields, ensureDashboardFields,
   };
 }
