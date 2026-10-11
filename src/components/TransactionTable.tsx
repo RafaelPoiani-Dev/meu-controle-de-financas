@@ -43,7 +43,7 @@ const TransactionTable = ({ transactions, onDelete, onToggleStatus, onEdit, show
     .filter((t) => t.type === "expense")
     .reduce((s, t) => s + t.amount, 0);
   const totalOther = transactions
-    .filter((t) => t.type !== "income" && t.type !== "expense")
+    .filter((t) => t.type !== "income" && t.type !== "expense" && t.type !== "planned")
     .reduce((s, t) => s + t.amount, 0);
   const net = totalIncome - totalExpense - totalOther;
 

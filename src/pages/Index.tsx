@@ -402,7 +402,7 @@ const Index = () => {
                 onAdd={addTransaction}
                 categoriesByType={categoriesByType}
                 creditCardNames={creditCardNames}
-                transactionTypes={settings.transactionTypes}
+                transactionTypes={entryTransactionTypes}
               />
             </div>
             <div className="space-y-3">
@@ -626,7 +626,7 @@ const Index = () => {
         }}
         categoriesByType={categoriesByType}
         creditCardNames={creditCardNames}
-        transactionTypes={settings.transactionTypes}
+        transactionTypes={entryTransactionTypes}
       />
 
       <InvoiceImportDialog
