@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Plus, Eye, EyeOff, Pencil, GripVertical } from "lucide-react";
+import { Plus, Eye, EyeOff, Pencil, GripVertical, ChevronUp, ChevronDown } from "lucide-react";
 import type { UserCategory, UserCreditCard, UserDashboardField } from "@/hooks/useUserSettings";
 import ConfirmDeleteButton from "./ConfirmDeleteButton";
 
@@ -25,6 +25,11 @@ const defaultFieldTypeOptions = [
   { value: "income", label: "Receitas" },
   { value: "expense", label: "Despesas" },
   { value: "balance", label: "Saldo" },
+  { value: "planned_total", label: "Planejado" },
+  { value: "planned_balance", label: "Saldo Planejado" },
+  { value: "ifood_benefit", label: "iFood Benefício" },
+  { value: "ifood_spent", label: "iFood Lançamentos" },
+  { value: "ifood_balance", label: "iFood Saldo" },
 ];
 
 const SettingsTab = ({
@@ -52,6 +57,14 @@ const SettingsTab = ({
   const [editingCardName, setEditingCardName] = useState("");
   const dragIdRef = useRef<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
+
+  const moveField = (idx: number, dir: number) => {
+    const ids = dashboardFields.map((f) => f.id);
+    const to = idx + dir;
+    if (to < 0 || to >= ids.length) return;
+    [ids[idx], ids[to]] = [ids[to], ids[idx]];
+    onReorderDashboardFields(ids);
+  };
 
   const fieldTypeOptions = (() => {
     const opts = [...defaultFieldTypeOptions];
@@ -273,7 +286,7 @@ const SettingsTab = ({
       <section className="bg-card rounded-lg shadow-card border border-border p-5">
         <h3 className="text-lg font-bold font-display text-card-foreground mb-4">Campos do Painel</h3>
         <div className="space-y-2">
-          {dashboardFields.map((field) => (
+          {dashboardFields.map((field, idx) => (
             <div
               key={field.id}
               draggable={editingField !== field.id}
@@ -338,6 +351,12 @@ const SettingsTab = ({
                       {field.category}
                     </span>
                   )}
+                  <button disabled={idx === 0} onClick={() => moveField(idx, -1)} className="text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors p-1" aria-label="Mover para cima">
+                    <ChevronUp size={16} />
+                  </button>
+                  <button disabled={idx === dashboardFields.length - 1} onClick={() => moveField(idx, 1)} className="text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors p-1" aria-label="Mover para baixo">
+                    <ChevronDown size={16} />
+                  </button>
                   <button onClick={() => onToggleFieldVisibility(field.id)} className="text-muted-foreground hover:text-foreground transition-colors" aria-label={field.visible ? "Ocultar campo" : "Exibir campo"}>
                     {field.visible ? <Eye size={14} /> : <EyeOff size={14} />}
                   </button>
