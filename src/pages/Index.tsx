@@ -160,6 +160,13 @@ const Index = () => {
     [filteredTransactions, totalReserva],
   );
   const balance = totalIncome - totalExpense;
+  // Planned expenses never affect real totals; only the "Planejado" cards.
+  const totalPlannedOnly = useMemo(
+    () => filteredTransactions.filter((t) => t.type === "planned").reduce((sum, t) => sum + t.amount, 0),
+    [filteredTransactions],
+  );
+  const totalPlanned = totalExpense + totalPlannedOnly;
+  const plannedBalance = totalIncome - totalPlanned;
 
   const standardTypes = ["income", "expense", "balance"];
   const getFieldValue = (field: { fieldType: string; category?: string }) => {
@@ -240,8 +247,13 @@ const Index = () => {
       if (!map[c.type]) map[c.type] = [];
       map[c.type].push(c.name);
     });
+    map.planned = [...(map.planned ?? []), ...(map.expense ?? [])];
     return map;
   }, [settings.categories]);
+  const entryTransactionTypes = useMemo(
+    () => (settings.transactionTypes.includes("planned") ? settings.transactionTypes : [...settings.transactionTypes, "planned"]),
+    [settings.transactionTypes],
+  );
   const creditCardNames = useMemo(() => settings.creditCards.map((c) => c.name), [settings.creditCards]);
 
   const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
@@ -364,6 +376,20 @@ const Index = () => {
                     />
                   );
                 })}
+              <SummaryCard
+                title="Planejado"
+                value={fmt(totalPlanned)}
+                icon={<TrendingDown size={20} />}
+                type="savings"
+                trend="Despesas + gastos previstos"
+              />
+              <SummaryCard
+                title="Saldo Planejado"
+                value={fmt(plannedBalance)}
+                icon={<DollarSign size={20} />}
+                type="savings"
+                trend={plannedBalance >= 0 ? "Positivo ✓" : "Negativo ✗"}
+              />
             </div>
             <DashboardCharts transactions={filteredTransactions} spentByCard={spentByCard} />
           </div>
