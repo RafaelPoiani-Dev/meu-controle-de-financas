@@ -87,7 +87,8 @@ export async function pushOutbox() {
     } catch (e: any) {
       console.error("[sync] push failed", entry, e);
       lastError = e?.message ?? String(e);
-      break;
+      // Network failure: stop and retry later. Server rejection: skip so it doesn't block the queue.
+      if (!navigator.onLine || /fetch|network/i.test(lastError ?? "")) break;
     }
   }
   notify();
@@ -135,6 +136,17 @@ export async function localUpsert(table: SyncTable, row: any) {
     });
   });
   notify();
+  scheduleSync(row.user_id);
+}
+
+let syncTimer: number | undefined;
+let lastUserId: string | undefined;
+function scheduleSync(userId?: string) {
+  if (userId) lastUserId = userId;
+  if (!lastUserId) return;
+  window.clearTimeout(syncTimer);
+  const uid = lastUserId;
+  syncTimer = window.setTimeout(() => void syncAll(uid), 300);
 }
 
 export async function localDelete(table: SyncTable, id: string) {
