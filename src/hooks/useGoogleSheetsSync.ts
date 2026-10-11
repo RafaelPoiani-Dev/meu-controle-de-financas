@@ -7,6 +7,9 @@ export function useGoogleSheetsSync() {
   const [syncing, setSyncing] = useState(false);
 
   const syncToSheets = useCallback(async (transactions: Transaction[]) => {
+    if (!transactions.length) return;
+    const { data: sess } = await supabase.auth.getSession();
+    if (!sess.session) return;
     setSyncing(true);
     try {
       const { data, error } = await supabase.functions.invoke("sync-google-sheets", {

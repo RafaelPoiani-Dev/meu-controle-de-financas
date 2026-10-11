@@ -11,7 +11,7 @@ interface Transaction {
   date: string;
   description: string;
   category: string;
-  type: "income" | "expense";
+  type: string;
   amount: number;
   installments?: number;
   currentInstallment?: number;
@@ -58,7 +58,7 @@ function validateTransactions(data: unknown): Transaction[] {
     if (typeof t.category !== "string" || t.category.length > 100) {
       throw new Error(`Transaction ${i}: invalid category`);
     }
-    if (!validTypes.includes(t.type)) {
+    if (typeof t.type !== "string" || t.type.length > 50) {
       throw new Error(`Transaction ${i}: invalid type`);
     }
     if (typeof t.amount !== "number" || !isFinite(t.amount) || t.amount < 0) {
@@ -180,7 +180,7 @@ async function syncToGoogleSheets(
     sanitize(t.date),
     sanitize(t.description),
     sanitize(t.category),
-    t.type === "income" ? "Receita" : "Despesa",
+    t.type === "income" ? "Receita" : t.type === "expense" ? "Despesa" : t.type === "planned" ? "Planejado" : sanitize(t.type),
     t.amount,
     t.installments ?? "",
     t.currentInstallment ?? "",
@@ -229,21 +229,14 @@ Deno.serve(async (req) => {
     );
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
+    const { data: userData, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !userData?.user) {
       return new Response(
         JSON.stringify({ success: false, error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Reject anon-key requests — only authenticated users allowed
-    if (claimsData.claims.role !== "authenticated") {
-      return new Response(
-        JSON.stringify({ success: false, error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
 
     // --- Secrets ---
     const serviceAccountJson = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
