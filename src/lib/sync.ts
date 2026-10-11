@@ -108,6 +108,7 @@ export async function syncAll(userId: string) {
 }
 
 export function startAutoSync(userId: string) {
+  lastUserId = userId;
   void syncAll(userId);
   const onOnline = () => void syncAll(userId);
   const onFocus = () => void syncAll(userId);
@@ -165,6 +166,7 @@ export async function localDelete(table: SyncTable, id: string) {
     });
   });
   notify();
+  scheduleSync();
 }
 
 export async function clearUserCache(userId: string) {
