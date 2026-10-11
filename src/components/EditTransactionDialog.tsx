@@ -26,6 +26,7 @@ function addMonthsToDateString(dateStr: string, monthsToAdd: number): string {
 const typeLabels: Record<string, string> = {
   income: "Receita",
   expense: "Despesa",
+  planned: "Planejado",
 };
 
 const EditTransactionDialog = ({

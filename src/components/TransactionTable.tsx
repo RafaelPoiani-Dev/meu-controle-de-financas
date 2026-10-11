@@ -43,7 +43,7 @@ const TransactionTable = ({ transactions, onDelete, onToggleStatus, onEdit, show
     .filter((t) => t.type === "expense")
     .reduce((s, t) => s + t.amount, 0);
   const totalOther = transactions
-    .filter((t) => t.type !== "income" && t.type !== "expense")
+    .filter((t) => t.type !== "income" && t.type !== "expense" && t.type !== "planned")
     .reduce((s, t) => s + t.amount, 0);
   const net = totalIncome - totalExpense - totalOther;
 
@@ -82,6 +82,11 @@ const TransactionTable = ({ transactions, onDelete, onToggleStatus, onEdit, show
                   </td>
                   <td className="px-4 py-3 text-sm text-foreground font-medium">
                     {t.description}
+                    {t.type === "planned" && (
+                      <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-secondary text-secondary-foreground font-semibold align-middle">
+                        Planejado
+                      </span>
+                    )}
                     {t.creditCard && (
                       <span className="block text-xs text-muted-foreground mt-0.5">
                         {t.creditCard}

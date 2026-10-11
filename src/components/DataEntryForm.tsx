@@ -37,11 +37,13 @@ function addMonthsToDateString(dateStr: string, monthsToAdd: number): string {
 const typeLabels: Record<string, string> = {
   income: "Receita",
   expense: "Despesa",
+  planned: "Planejado",
 };
 
 const typeColors: Record<string, { active: string; inactive: string }> = {
   income: { active: "bg-income text-primary-foreground", inactive: "bg-card text-muted-foreground hover:bg-muted" },
   expense: { active: "bg-expense text-primary-foreground", inactive: "bg-card text-muted-foreground hover:bg-muted" },
+  planned: { active: "bg-secondary text-secondary-foreground", inactive: "bg-card text-muted-foreground hover:bg-muted" },
 };
 
 const defaultActive = "bg-primary text-primary-foreground";
