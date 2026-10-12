@@ -28,7 +28,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import SummaryCard from "../components/SummaryCard";
 import DataEntryForm from "../components/DataEntryForm";
 import TransactionTable from "../components/TransactionTable";
-import DashboardCharts from "../components/DashboardCharts";
+import HomeDashboard from "../components/HomeDashboard";
 import MonthYearSelector from "../components/MonthYearSelector";
 import SettingsTab from "../components/SettingsTab";
 import EditTransactionDialog from "../components/EditTransactionDialog";
@@ -101,13 +101,9 @@ const Index = () => {
 
   useEffect(() => {
     if (!user?.id || settings.loading || settings.dashboardFields.length === 0) return;
-    settings.ensureDashboardFields([
-      { label: "Planejado", fieldType: "planned_total" },
-      { label: "Saldo Planejado", fieldType: "planned_balance" },
-      { label: "iFood Benefícios", fieldType: "ifood_benefit" },
-      { label: "iFood Lançamentos", fieldType: "ifood_spent" },
-      { label: "iFood Saldo", fieldType: "ifood_balance" },
-    ]);
+    // iFood é uma categoria comum de despesa
+    const hasIfood = settings.categories.some((c) => c.type === "expense" && c.name.toLowerCase() === "ifood");
+    if (!hasIfood) settings.addCategory("iFood", "expense");
   }, [user?.id, settings.loading, settings.dashboardFields.length]);
 
   const now = new Date();
@@ -163,7 +159,7 @@ const Index = () => {
 
   // iFood Benefícios purchases are isolated from personal totals.
   const personalTransactions = useMemo(
-    () => filteredTransactions.filter((t) => !isIfoodCard(t.creditCard)),
+    () => filteredTransactions,
     [filteredTransactions],
   );
   const ifoodTransactions = useMemo(
@@ -296,7 +292,6 @@ const Index = () => {
     { key: "all", label: "Todas", icon: <List size={18} /> },
     { key: "cards", label: "Cartões", icon: <CreditCard size={18} /> },
     { key: "receipts", label: "Cupom", icon: <Receipt size={18} /> },
-    { key: "ifood", label: "iFood", icon: <UtensilsCrossed size={18} /> },
     { key: "settings", label: "Ajustes", icon: <Settings size={18} /> },
   ];
 
@@ -394,25 +389,16 @@ const Index = () => {
 
         {activeTab === "dashboard" && (
           <div className="space-y-6">
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-              {settings.dashboardFields
-                .filter((f) => f.visible)
-                .sort((a, b) => a.sortOrder - b.sortOrder)
-                .map((field) => {
-                  const fv = getFieldValue(field);
-                  return (
-                    <SummaryCard
-                      key={field.id}
-                      title={field.label}
-                      value={fmt(fv.value)}
-                      icon={fieldTypeIcons[field.fieldType] ?? <DollarSign size={20} />}
-                      type={(["income","expense","balance","savings"].includes(fv.type) ? fv.type : "balance") as any}
-                      trend={fv.trend}
-                    />
-                  );
-                })}
-            </div>
-            <DashboardCharts transactions={filteredTransactions} spentByCard={spentByCard} />
+            <HomeDashboard
+              transactions={personalTransactions}
+              income={totalIncome}
+              expense={totalExpense}
+              balance={balance}
+              year={selectedYear}
+              month={selectedMonth}
+              cards={cardSummary.map((c) => ({ card: c.card, spent: c.spent }))}
+              onOpenCards={() => setActiveTab("cards")}
+            />
           </div>
         )}
 
@@ -576,47 +562,6 @@ const Index = () => {
             </div>
           );
         })()}
-
-        {activeTab === "ifood" && (
-          <div className="space-y-5">
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-              <SummaryCard title="iFood Benefícios" value={fmt(ifoodBenefit)} icon={<UtensilsCrossed size={20} />} type="income" trend="Benefício do mês" />
-              <SummaryCard title="Lançamentos" value={fmt(ifoodSpent)} icon={<TrendingDown size={20} />} type="expense" trend={`${ifoodTransactions.length} compra(s)`} />
-              <SummaryCard title="Saldo" value={fmt(ifoodBalance)} icon={<DollarSign size={20} />} type="balance" trend={ifoodBalance >= 0 ? "Disponível ✓" : "Esgotado ✗"} />
-            </div>
-            <div className="bg-card rounded-lg shadow-card border border-border p-5 space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Consumo do benefício</span>
-                <span className="font-semibold text-foreground">{ifoodBenefit > 0 ? Math.round((ifoodSpent / ifoodBenefit) * 100) : 0}%</span>
-              </div>
-              <div className="h-3 rounded-full bg-muted overflow-hidden">
-                <div className={`h-full ${ifoodBalance >= 0 ? "gradient-warm" : "bg-expense"}`} style={{ width: `${ifoodBenefit > 0 ? Math.min(100, (ifoodSpent / ifoodBenefit) * 100) : 0}%` }} />
-              </div>
-              <div className="flex flex-wrap items-end gap-2 pt-2">
-                <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">Valor mensal do benefício (R$)</label>
-                  <input type="number" min="0" step="0.01" value={ifoodInput} placeholder={ifoodBenefit ? String(ifoodBenefit) : "0,00"} onChange={(e) => setIfoodInput(e.target.value)}
-                    className="w-40 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
-                </div>
-                <Button onClick={async () => {
-                  const v = Number(ifoodInput);
-                  if (!ifoodInput || isNaN(v)) return;
-                  if (ifoodCard) await settings.updateCardLimit(ifoodCard.id, v);
-                  else await settings.addCard("iFood Benefícios", v);
-                  setIfoodInput("");
-                }}>Salvar</Button>
-              </div>
-              {!ifoodCard && <p className="text-xs text-muted-foreground">Ao salvar, o cartão "iFood Benefícios" aparece como opção nos lançamentos.</p>}
-            </div>
-            <TransactionTable
-              transactions={ifoodTransactions}
-              onDelete={deleteTransaction}
-              onToggleStatus={toggleStatus}
-              onEdit={setEditingId}
-              showStatus
-            />
-          </div>
-        )}
 
         {activeTab === "receipts" && (
           <div className="space-y-4">
