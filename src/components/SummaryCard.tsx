@@ -18,12 +18,12 @@ const SummaryCard = ({ title, value, icon, trend, type = "balance" }: SummaryCar
   };
 
   return (
-    <div className={`bg-card rounded-lg p-5 shadow-card animate-fade-in ${typeStyles[type]}`}>
+    <div className={`bg-card rounded-lg p-3 sm:p-5 shadow-card animate-fade-in min-w-0 ${typeStyles[type]}`}>
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-medium text-muted-foreground">{title}</span>
+        <span className="text-xs sm:text-sm font-medium text-muted-foreground truncate">{title}</span>
         <span className="text-muted-foreground">{icon}</span>
       </div>
-      <p className="text-2xl font-bold font-display text-card-foreground">{value}</p>
+      <p className="text-base sm:text-2xl font-bold font-display text-card-foreground truncate">{value}</p>
       {trend && (
         <p className="text-xs text-muted-foreground mt-1">{trend}</p>
       )}

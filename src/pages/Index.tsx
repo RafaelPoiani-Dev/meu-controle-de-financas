@@ -16,6 +16,7 @@ import {
   Receipt,
   FileSpreadsheet,
   ScanLine,
+  UtensilsCrossed,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SheetImportDialog from "../components/SheetImportDialog";
@@ -42,7 +43,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { expandInstallments, filterByMonthYear } from "@/lib/expandInstallments";
 import OnlineStatusBadge from "@/components/OnlineStatusBadge";
 
-type TabKey = "dashboard" | "entry" | "cards" | "all" | "receipts" | "settings";
+type TabKey = "dashboard" | "entry" | "cards" | "all" | "receipts" | "ifood" | "settings";
+
+const isIfoodCard = (name?: string | null) => !!name && name.toLowerCase().replace(/\s/g, "").includes("ifood");
 
 const MONTHS_FULL = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -96,6 +99,17 @@ const Index = () => {
 
 
 
+  useEffect(() => {
+    if (!user?.id || settings.loading || settings.dashboardFields.length === 0) return;
+    settings.ensureDashboardFields([
+      { label: "Planejado", fieldType: "planned_total" },
+      { label: "Saldo Planejado", fieldType: "planned_balance" },
+      { label: "iFood Benefícios", fieldType: "ifood_benefit" },
+      { label: "iFood Lançamentos", fieldType: "ifood_spent" },
+      { label: "iFood Saldo", fieldType: "ifood_balance" },
+    ]);
+  }, [user?.id, settings.loading, settings.dashboardFields.length]);
+
   const now = new Date();
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
@@ -147,23 +161,38 @@ const Index = () => {
     prevTransactionsRef.current = serialized;
   }, [transactions, syncToSheets]);
 
-  const totalReserva = useMemo(
-    () => filteredTransactions.filter((t) => t.type === "reserva").reduce((sum, t) => sum + t.amount, 0),
+  // iFood Benefícios purchases are isolated from personal totals.
+  const personalTransactions = useMemo(
+    () => filteredTransactions.filter((t) => !isIfoodCard(t.creditCard)),
     [filteredTransactions],
   );
+  const ifoodTransactions = useMemo(
+    () => filteredTransactions.filter((t) => isIfoodCard(t.creditCard)),
+    [filteredTransactions],
+  );
+  const ifoodCard = settings.creditCards.find((c) => isIfoodCard(c.name));
+  const ifoodBenefit = ifoodCard?.cardLimit ?? 0;
+  const ifoodSpent = ifoodTransactions.filter((t) => t.type !== "income" && t.type !== "planned").reduce((s, t) => s + t.amount, 0);
+  const ifoodBalance = ifoodBenefit - ifoodSpent;
+  const [ifoodInput, setIfoodInput] = useState("");
+
+  const totalReserva = useMemo(
+    () => personalTransactions.filter((t) => t.type === "reserva").reduce((sum, t) => sum + t.amount, 0),
+    [personalTransactions],
+  );
   const totalIncome = useMemo(
-    () => filteredTransactions.filter((t) => t.type === "income").reduce((sum, t) => sum + t.amount, 0) - totalReserva,
-    [filteredTransactions, totalReserva],
+    () => personalTransactions.filter((t) => t.type === "income").reduce((sum, t) => sum + t.amount, 0) - totalReserva,
+    [personalTransactions, totalReserva],
   );
   const totalExpense = useMemo(
-    () => filteredTransactions.filter((t) => t.type === "expense").reduce((sum, t) => sum + t.amount, 0) + totalReserva,
-    [filteredTransactions, totalReserva],
+    () => personalTransactions.filter((t) => t.type === "expense").reduce((sum, t) => sum + t.amount, 0) + totalReserva,
+    [personalTransactions, totalReserva],
   );
   const balance = totalIncome - totalExpense;
   // Planned expenses never affect real totals; only the "Planejado" cards.
   const totalPlannedOnly = useMemo(
-    () => filteredTransactions.filter((t) => t.type === "planned").reduce((sum, t) => sum + t.amount, 0),
-    [filteredTransactions],
+    () => personalTransactions.filter((t) => t.type === "planned").reduce((sum, t) => sum + t.amount, 0),
+    [personalTransactions],
   );
   const totalPlanned = totalExpense + totalPlannedOnly;
   const plannedBalance = totalIncome - totalPlanned;
@@ -171,18 +200,23 @@ const Index = () => {
   const standardTypes = ["income", "expense", "balance"];
   const getFieldValue = (field: { fieldType: string; category?: string }) => {
     const { fieldType, category } = field;
+    if (fieldType === "planned_total") return { value: totalPlanned, trend: "Despesas + gastos previstos", type: "savings" };
+    if (fieldType === "planned_balance") return { value: plannedBalance, trend: plannedBalance >= 0 ? "Positivo ✓" : "Negativo ✗", type: "savings" };
+    if (fieldType === "ifood_benefit") return { value: ifoodBenefit, trend: "Benefício do mês", type: "income" };
+    if (fieldType === "ifood_spent") return { value: ifoodSpent, trend: "Gasto no iFood", type: "expense" };
+    if (fieldType === "ifood_balance") return { value: ifoodBalance, trend: ifoodBalance >= 0 ? "Disponível ✓" : "Esgotado ✗", type: "balance" };
     if (fieldType === "balance") {
       return { value: balance, trend: balance >= 0 ? "Positivo ✓" : "Negativo ✗", type: "balance" };
     }
-    let txs: typeof filteredTransactions;
+    let txs: typeof personalTransactions;
     if (category) {
       // Match by category across ALL transaction types
-      txs = filteredTransactions.filter((t) => t.category === category);
+      txs = personalTransactions.filter((t) => t.category === category);
     } else if (standardTypes.includes(fieldType)) {
-      txs = filteredTransactions.filter((t) => t.type === fieldType);
+      txs = personalTransactions.filter((t) => t.type === fieldType);
     } else {
       // Non-standard fieldType (e.g. "Reserva") — match by category name across all types
-      txs = filteredTransactions.filter((t) => t.category?.toLowerCase() === fieldType.toLowerCase());
+      txs = personalTransactions.filter((t) => t.category?.toLowerCase() === fieldType.toLowerCase());
     }
     const total = txs.reduce((sum, t) => sum + t.amount, 0);
     return { value: total, trend: category || "Total do período", type: fieldType };
@@ -262,6 +296,7 @@ const Index = () => {
     { key: "all", label: "Todas", icon: <List size={18} /> },
     { key: "cards", label: "Cartões", icon: <CreditCard size={18} /> },
     { key: "receipts", label: "Cupom", icon: <Receipt size={18} /> },
+    { key: "ifood", label: "iFood", icon: <UtensilsCrossed size={18} /> },
     { key: "settings", label: "Ajustes", icon: <Settings size={18} /> },
   ];
 
@@ -359,7 +394,7 @@ const Index = () => {
 
         {activeTab === "dashboard" && (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
               {settings.dashboardFields
                 .filter((f) => f.visible)
                 .sort((a, b) => a.sortOrder - b.sortOrder)
@@ -371,25 +406,11 @@ const Index = () => {
                       title={field.label}
                       value={fmt(fv.value)}
                       icon={fieldTypeIcons[field.fieldType] ?? <DollarSign size={20} />}
-                      type={fv.type as any}
+                      type={(["income","expense","balance","savings"].includes(fv.type) ? fv.type : "balance") as any}
                       trend={fv.trend}
                     />
                   );
                 })}
-              <SummaryCard
-                title="Planejado"
-                value={fmt(totalPlanned)}
-                icon={<TrendingDown size={20} />}
-                type="savings"
-                trend="Despesas + gastos previstos"
-              />
-              <SummaryCard
-                title="Saldo Planejado"
-                value={fmt(plannedBalance)}
-                icon={<DollarSign size={20} />}
-                type="savings"
-                trend={plannedBalance >= 0 ? "Positivo ✓" : "Negativo ✗"}
-              />
             </div>
             <DashboardCharts transactions={filteredTransactions} spentByCard={spentByCard} />
           </div>
@@ -555,6 +576,47 @@ const Index = () => {
             </div>
           );
         })()}
+
+        {activeTab === "ifood" && (
+          <div className="space-y-5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+              <SummaryCard title="iFood Benefícios" value={fmt(ifoodBenefit)} icon={<UtensilsCrossed size={20} />} type="income" trend="Benefício do mês" />
+              <SummaryCard title="Lançamentos" value={fmt(ifoodSpent)} icon={<TrendingDown size={20} />} type="expense" trend={`${ifoodTransactions.length} compra(s)`} />
+              <SummaryCard title="Saldo" value={fmt(ifoodBalance)} icon={<DollarSign size={20} />} type="balance" trend={ifoodBalance >= 0 ? "Disponível ✓" : "Esgotado ✗"} />
+            </div>
+            <div className="bg-card rounded-lg shadow-card border border-border p-5 space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Consumo do benefício</span>
+                <span className="font-semibold text-foreground">{ifoodBenefit > 0 ? Math.round((ifoodSpent / ifoodBenefit) * 100) : 0}%</span>
+              </div>
+              <div className="h-3 rounded-full bg-muted overflow-hidden">
+                <div className={`h-full ${ifoodBalance >= 0 ? "gradient-warm" : "bg-expense"}`} style={{ width: `${ifoodBenefit > 0 ? Math.min(100, (ifoodSpent / ifoodBenefit) * 100) : 0}%` }} />
+              </div>
+              <div className="flex flex-wrap items-end gap-2 pt-2">
+                <div>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">Valor mensal do benefício (R$)</label>
+                  <input type="number" min="0" step="0.01" value={ifoodInput} placeholder={ifoodBenefit ? String(ifoodBenefit) : "0,00"} onChange={(e) => setIfoodInput(e.target.value)}
+                    className="w-40 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
+                </div>
+                <Button onClick={async () => {
+                  const v = Number(ifoodInput);
+                  if (!ifoodInput || isNaN(v)) return;
+                  if (ifoodCard) await settings.updateCardLimit(ifoodCard.id, v);
+                  else await settings.addCard("iFood Benefícios", v);
+                  setIfoodInput("");
+                }}>Salvar</Button>
+              </div>
+              {!ifoodCard && <p className="text-xs text-muted-foreground">Ao salvar, o cartão "iFood Benefícios" aparece como opção nos lançamentos.</p>}
+            </div>
+            <TransactionTable
+              transactions={ifoodTransactions}
+              onDelete={deleteTransaction}
+              onToggleStatus={toggleStatus}
+              onEdit={setEditingId}
+              showStatus
+            />
+          </div>
+        )}
 
         {activeTab === "receipts" && (
           <div className="space-y-4">
