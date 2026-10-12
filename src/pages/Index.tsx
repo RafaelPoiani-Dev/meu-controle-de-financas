@@ -612,7 +612,8 @@ const Index = () => {
               transactions={ifoodTransactions}
               onDelete={deleteTransaction}
               onToggleStatus={toggleStatus}
-              onEdit={(t) => setEditingId(t.id)}
+              onEdit={setEditingId}
+              showStatus
             />
           </div>
         )}
