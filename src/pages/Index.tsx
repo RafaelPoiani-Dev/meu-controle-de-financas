@@ -398,6 +398,12 @@ const Index = () => {
               month={selectedMonth}
               cards={cardSummary.map((c) => ({ card: c.card, spent: c.spent }))}
               onOpenCards={() => setActiveTab("cards")}
+              overview={[
+                { label: "Investimento", value: totalReserva, hint: "Reserva do mês" },
+                { label: "Planejado", value: totalPlanned, hint: "Despesas + previstos" },
+                { label: "Saldo Planejado", value: plannedBalance, hint: plannedBalance >= 0 ? "Positivo" : "Negativo" },
+                { label: "iFood", value: filteredTransactions.filter((t) => t.type === "expense" && (t.category?.toLowerCase() === "ifood" || isIfoodCard(t.creditCard))).reduce((s, t) => s + t.amount, 0), hint: "Gasto no mês" },
+              ]}
             />
           </div>
         )}
