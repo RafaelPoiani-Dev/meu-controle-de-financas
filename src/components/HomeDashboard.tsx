@@ -23,9 +23,10 @@ interface Props {
   month: number; // 0-based
   cards: { card: string; spent: number }[];
   onOpenCards: () => void;
+  overview?: { label: string; value: number; hint?: string }[];
 }
 
-const HomeDashboard = ({ transactions, income, expense, balance, year, month, cards, onOpenCards }: Props) => {
+const HomeDashboard = ({ transactions, income, expense, balance, year, month, cards, onOpenCards, overview }: Props) => {
   const [view, setView] = useState<"pie" | "bar">("pie");
   const [selected, setSelected] = useState<string | null>(null);
 
@@ -95,6 +96,22 @@ const HomeDashboard = ({ transactions, income, expense, balance, year, month, ca
           </ResponsiveContainer>
         </div>
       </section>
+
+      {overview && overview.length > 0 && (
+        <section className="rounded-3xl bg-card border border-border shadow-card p-5">
+          <h3 className="text-base font-bold text-foreground mb-3">Visão geral</h3>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {overview.map((o) => (
+              <div key={o.label} className="rounded-2xl bg-muted/60 p-3 min-w-0">
+                <p className="text-xs text-muted-foreground truncate">{o.label}</p>
+                <p className={`text-base sm:text-lg font-bold truncate ${o.value < 0 ? "text-expense" : "text-foreground"}`}>{fmt(o.value)}</p>
+                {o.hint && <p className="text-[11px] text-muted-foreground truncate">{o.hint}</p>}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
 
       {/* Despesas por categoria */}
       <section className="rounded-3xl bg-card border border-border shadow-card p-5">
