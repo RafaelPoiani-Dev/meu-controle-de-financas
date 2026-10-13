@@ -400,6 +400,7 @@ const Index = () => {
           <div className="space-y-6">
             <HomeDashboard
               transactions={personalTransactions}
+              chartTransactions={filteredTransactions}
               income={totalIncome}
               expense={totalExpense}
               balance={balance}
