@@ -101,9 +101,11 @@ const Index = () => {
 
   useEffect(() => {
     if (!user?.id || settings.loading || settings.dashboardFields.length === 0) return;
-    // iFood é uma categoria comum de despesa
-    const hasIfood = settings.categories.some((c) => c.type === "expense" && c.name.toLowerCase() === "ifood");
-    if (!hasIfood) settings.addCategory("iFood", "expense");
+    // iFood existe como receita (crédito recebido) e despesa (compras)
+    (["expense", "income"] as const).forEach((type) => {
+      const has = settings.categories.some((c) => c.type === type && c.name.toLowerCase() === "ifood");
+      if (!has) settings.addCategory("iFood", type);
+    });
   }, [user?.id, settings.loading, settings.dashboardFields.length]);
 
   const now = new Date();
@@ -157,18 +159,20 @@ const Index = () => {
     prevTransactionsRef.current = serialized;
   }, [transactions, syncToSheets]);
 
-  // iFood Benefícios purchases are isolated from personal totals.
+  // iFood benefit is a separate wallet: its income and expenses never touch general totals.
+  const isIfoodTx = (t: Transaction) => isIfoodCard(t.category) || isIfoodCard(t.creditCard);
   const personalTransactions = useMemo(
-    () => filteredTransactions,
+    () => filteredTransactions.filter((t) => !isIfoodTx(t)),
     [filteredTransactions],
   );
   const ifoodTransactions = useMemo(
-    () => filteredTransactions.filter((t) => isIfoodCard(t.creditCard)),
+    () => filteredTransactions.filter(isIfoodTx),
     [filteredTransactions],
   );
   const ifoodCard = settings.creditCards.find((c) => isIfoodCard(c.name));
-  const ifoodBenefit = ifoodCard?.cardLimit ?? 0;
-  const ifoodSpent = ifoodTransactions.filter((t) => t.type !== "income" && t.type !== "planned").reduce((s, t) => s + t.amount, 0);
+  const ifoodReceived = ifoodTransactions.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0);
+  const ifoodBenefit = ifoodReceived > 0 ? ifoodReceived : ifoodCard?.cardLimit ?? 0;
+  const ifoodSpent = ifoodTransactions.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0);
   const ifoodBalance = ifoodBenefit - ifoodSpent;
   const [ifoodInput, setIfoodInput] = useState("");
 
@@ -403,10 +407,21 @@ const Index = () => {
               month={selectedMonth}
               cards={cardSummary.map((c) => ({ card: c.card, spent: c.spent }))}
               onOpenCards={() => setActiveTab("cards")}
-              overview={settings.dashboardFields
-                .filter((f) => f.visible)
-                .sort((a, b) => a.sortOrder - b.sortOrder)
-                .map((f) => ({ label: f.label, value: getFieldValue(f).value, hint: f.category }))}
+              overview={(() => {
+                const visible = settings.dashboardFields
+                  .filter((f) => f.visible)
+                  .sort((a, b) => a.sortOrder - b.sortOrder);
+                const items = visible.map((f) => ({ label: f.label, value: getFieldValue(f).value, hint: f.category }));
+                const hasIfoodFields = visible.some((f) => f.fieldType.startsWith("ifood_"));
+                if (!hasIfoodFields && (ifoodBenefit > 0 || ifoodSpent > 0)) {
+                  items.push(
+                    { label: "iFood recebido", value: ifoodBenefit, hint: undefined },
+                    { label: "iFood gasto", value: ifoodSpent, hint: undefined },
+                    { label: "iFood saldo", value: ifoodBalance, hint: undefined },
+                  );
+                }
+                return items;
+              })()}
             />
           </div>
         )}
