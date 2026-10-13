@@ -24,13 +24,14 @@ interface Props {
   cards: { card: string; spent: number }[];
   onOpenCards: () => void;
   overview?: { label: string; value: number; hint?: string }[];
+  chartTransactions?: Transaction[];
 }
 
-const HomeDashboard = ({ transactions, income, expense, balance, year, month, cards, onOpenCards, overview }: Props) => {
+const HomeDashboard = ({ transactions, income, expense, balance, year, month, cards, onOpenCards, overview, chartTransactions }: Props) => {
   const [view, setView] = useState<"pie" | "bar">("pie");
   const [selected, setSelected] = useState<string | null>(null);
 
-  const expenses = useMemo(() => transactions.filter((t) => t.type === "expense"), [transactions]);
+  const expenses = useMemo(() => (chartTransactions ?? transactions).filter((t) => t.type === "expense"), [transactions, chartTransactions]);
 
   const daily = useMemo(() => {
     const days = new Date(year, month + 1, 0).getDate();
