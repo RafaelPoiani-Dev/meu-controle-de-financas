@@ -360,21 +360,26 @@ const Index = () => {
 
       {/* Tabs */}
       <div className="max-w-6xl mx-auto px-4 -mt-4">
-        <div className="bg-card rounded-xl shadow-card inline-flex p-1 gap-1 flex-wrap">
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                activeTab === tab.key
-                  ? "gradient-warm text-primary-foreground shadow-warm"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
-              }`}
-            >
-              {tab.icon}
-              {tab.label}
-            </button>
-          ))}
+        <div className="bg-card rounded-xl shadow-card flex sm:inline-flex p-1 gap-1 sm:flex-wrap">
+          {tabs.map((tab) => {
+            const active = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                aria-label={tab.label}
+                title={tab.label}
+                className={`flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  active
+                    ? "gradient-warm text-primary-foreground shadow-warm px-3 sm:px-4 flex-[2] sm:flex-none"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted px-2 sm:px-4 flex-1 sm:flex-none"
+                }`}
+              >
+                {tab.icon}
+                <span className={active ? "inline truncate" : "hidden sm:inline"}>{tab.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -398,12 +403,10 @@ const Index = () => {
               month={selectedMonth}
               cards={cardSummary.map((c) => ({ card: c.card, spent: c.spent }))}
               onOpenCards={() => setActiveTab("cards")}
-              overview={[
-                { label: "Investimento", value: totalReserva, hint: "Reserva do mês" },
-                { label: "Planejado", value: totalPlanned, hint: "Despesas + previstos" },
-                { label: "Saldo Planejado", value: plannedBalance, hint: plannedBalance >= 0 ? "Positivo" : "Negativo" },
-                { label: "iFood", value: filteredTransactions.filter((t) => t.type === "expense" && (t.category?.toLowerCase() === "ifood" || isIfoodCard(t.creditCard))).reduce((s, t) => s + t.amount, 0), hint: "Gasto no mês" },
-              ]}
+              overview={settings.dashboardFields
+                .filter((f) => f.visible)
+                .sort((a, b) => a.sortOrder - b.sortOrder)
+                .map((f) => ({ label: f.label, value: getFieldValue(f).value, hint: f.category }))}
             />
           </div>
         )}
