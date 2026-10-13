@@ -80,21 +80,6 @@ const HomeDashboard = ({ transactions, income, expense, balance, year, month, ca
             <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-foreground whitespace-nowrap">{fmt(expense)}</span>
           </div>
         </div>
-        <div className="h-28 mt-4 -mx-2">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={daily} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
-              <defs>
-                <linearGradient id="homeTrend" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
-                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <XAxis dataKey="day" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} interval={6} />
-              <Tooltip formatter={(v: number) => fmt(v)} labelFormatter={(l) => `Dia ${l}`} contentStyle={{ borderRadius: 12, fontSize: 12 }} />
-              <Area type="monotone" dataKey="value" name="Gastos" stroke="hsl(var(--primary))" strokeWidth={2} fill="url(#homeTrend)" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
       </section>
 
       {overview && overview.length > 0 && (
