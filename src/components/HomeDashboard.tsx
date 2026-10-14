@@ -25,9 +25,10 @@ interface Props {
   onOpenCards: () => void;
   overview?: { label: string; value: number; hint?: string }[];
   chartTransactions?: Transaction[];
+  goalsSlot?: React.ReactNode;
 }
 
-const HomeDashboard = ({ transactions, income, expense, balance, year, month, cards, onOpenCards, overview, chartTransactions }: Props) => {
+const HomeDashboard = ({ transactions, income, expense, balance, year, month, cards, onOpenCards, overview, chartTransactions, goalsSlot }: Props) => {
   const [view, setView] = useState<"pie" | "bar">("pie");
   const [selected, setSelected] = useState<string | null>(null);
 
@@ -82,6 +83,9 @@ const HomeDashboard = ({ transactions, income, expense, balance, year, month, ca
           </div>
         </div>
       </section>
+
+      {goalsSlot}
+
 
       {overview && overview.length > 0 && (
         <section className="rounded-3xl bg-card border border-border shadow-card p-5">
