@@ -205,6 +205,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_goals: {
+        Row: {
+          category: string
+          created_at: string
+          deadline: string | null
+          id: string
+          is_main: boolean
+          name: string
+          target: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          deadline?: string | null
+          id?: string
+          is_main?: boolean
+          name: string
+          target?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          deadline?: string | null
+          id?: string
+          is_main?: boolean
+          name?: string
+          target?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

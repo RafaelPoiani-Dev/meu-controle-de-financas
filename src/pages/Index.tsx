@@ -17,11 +17,15 @@ import {
   FileSpreadsheet,
   ScanLine,
   UtensilsCrossed,
+  Target,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SheetImportDialog from "../components/SheetImportDialog";
 import ScreenshotImportDialog from "../components/ScreenshotImportDialog";
 import ReceiptScanTab from "../components/ReceiptScanTab";
+import GoalsTab from "../components/GoalsTab";
+import GoalsProgress, { type GoalWithProgress } from "../components/GoalsProgress";
+import { useGoals, goalContributions, goalYear } from "../hooks/useGoals";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -43,7 +47,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { expandInstallments, filterByMonthYear } from "@/lib/expandInstallments";
 import OnlineStatusBadge from "@/components/OnlineStatusBadge";
 
-type TabKey = "dashboard" | "entry" | "cards" | "all" | "receipts" | "ifood" | "settings";
+type TabKey = "dashboard" | "entry" | "goals" | "cards" | "all" | "receipts" | "ifood" | "settings";
 
 const isIfoodCard = (name?: string | null) => !!name && name.toLowerCase().replace(/\s/g, "").includes("ifood");
 
@@ -62,6 +66,19 @@ const Index = () => {
   const { user, signOut } = useAuth();
   const { transactions, loading, addTransaction, deleteTransaction, toggleStatus, updateTransaction } = useTransactions(user?.id);
   const settings = useUserSettings(user?.id);
+  const goalsApi = useGoals(user?.id);
+  const goalsWithProgress = useMemo<GoalWithProgress[]>(() => {
+    const now = new Date();
+    const curY = now.getFullYear();
+    const curM = now.getMonth() + 1;
+    return goalsApi.goals.map((g) => {
+      const fallback = curY;
+      const saved = goalContributions(g, transactions, fallback).reduce((s, t) => s + t.amount, 0);
+      const dl = g.deadline ?? `${goalYear(g, fallback)}-12-31`;
+      const monthsLeft = Math.max(0, (Number(dl.slice(0, 4)) - curY) * 12 + Number(dl.slice(5, 7)) - curM + 1);
+      return { ...g, saved, monthsLeft };
+    });
+  }, [goalsApi.goals, transactions]);
   const [activeTab, setActiveTab] = useState<TabKey>("dashboard");
   const { syncToSheets, syncing } = useGoogleSheetsSync();
   const prevTransactionsRef = useRef<string>("");
@@ -293,6 +310,7 @@ const Index = () => {
   const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
     { key: "dashboard", label: "Painel", icon: <LayoutDashboard size={18} /> },
     { key: "entry", label: "Lançamentos", icon: <PlusCircle size={18} /> },
+    { key: "goals", label: "Metas", icon: <Target size={18} /> },
     { key: "all", label: "Todas", icon: <List size={18} /> },
     { key: "cards", label: "Cartões", icon: <CreditCard size={18} /> },
     { key: "receipts", label: "Cupom", icon: <Receipt size={18} /> },
@@ -408,6 +426,7 @@ const Index = () => {
               month={selectedMonth}
               cards={cardSummary.map((c) => ({ card: c.card, spent: c.spent }))}
               onOpenCards={() => setActiveTab("cards")}
+              goalsSlot={<GoalsProgress goals={goalsWithProgress} onMain={goalsApi.setMain} onOpen={() => setActiveTab("goals")} />}
               overview={(() => {
                 const visible = settings.dashboardFields
                   .filter((f) => f.visible)
@@ -587,6 +606,18 @@ const Index = () => {
             </div>
           );
         })()}
+
+        {activeTab === "goals" && (
+          <GoalsTab
+            goals={goalsWithProgress}
+            transactions={transactions}
+            categories={settings.categories.map((c) => c.name)}
+            year={selectedYear}
+            onSave={goalsApi.save}
+            onRemove={goalsApi.remove}
+            onMain={goalsApi.setMain}
+          />
+        )}
 
         {activeTab === "receipts" && (
           <div className="space-y-4">
