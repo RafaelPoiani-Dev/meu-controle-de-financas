@@ -18,7 +18,9 @@ import {
   ScanLine,
   UtensilsCrossed,
   Target,
+  Shield,
 } from "lucide-react";
+import CostOfLivingTab from "@/components/CostOfLivingTab";
 import { Button } from "@/components/ui/button";
 import SheetImportDialog from "../components/SheetImportDialog";
 import ScreenshotImportDialog from "../components/ScreenshotImportDialog";
@@ -47,7 +49,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { expandInstallments, filterByMonthYear } from "@/lib/expandInstallments";
 import OnlineStatusBadge from "@/components/OnlineStatusBadge";
 
-type TabKey = "dashboard" | "entry" | "goals" | "cards" | "all" | "receipts" | "ifood" | "settings";
+type TabKey = "dashboard" | "entry" | "goals" | "living" | "cards" | "all" | "receipts" | "ifood" | "settings";
 
 const isIfoodCard = (name?: string | null) => !!name && name.toLowerCase().replace(/\s/g, "").includes("ifood");
 
@@ -311,6 +313,7 @@ const Index = () => {
     { key: "dashboard", label: "Painel", icon: <LayoutDashboard size={18} /> },
     { key: "entry", label: "Lançamentos", icon: <PlusCircle size={18} /> },
     { key: "goals", label: "Metas", icon: <Target size={18} /> },
+    { key: "living", label: "Custo de Vida", icon: <Shield size={18} /> },
     { key: "all", label: "Todas", icon: <List size={18} /> },
     { key: "cards", label: "Cartões", icon: <CreditCard size={18} /> },
     { key: "receipts", label: "Cupom", icon: <Receipt size={18} /> },
@@ -616,6 +619,17 @@ const Index = () => {
             onSave={goalsApi.save}
             onRemove={goalsApi.remove}
             onMain={goalsApi.setMain}
+          />
+        )}
+
+        {activeTab === "living" && (
+          <CostOfLivingTab
+            transactions={expandedTransactions}
+            userId={user?.id}
+            monthlyGoal={(() => {
+              const g = goalsWithProgress.find((x) => x.isMain);
+              return g && g.monthsLeft > 0 ? Math.max(0, g.target - g.saved) / g.monthsLeft : 0;
+            })()}
           />
         )}
 
