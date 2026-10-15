@@ -7,10 +7,10 @@ import { auth, defineMcp } from "npm:@lovable.dev/mcp-js@0.20.1";
 
 // src/lib/mcp/tools/list-transactions.ts
 import { defineTool } from "npm:@lovable.dev/mcp-js@0.20.1";
-import { z } from "npm:zod@^3.25.76";
+import { z } from "npm:zod@3.25.76";
 
 // src/lib/mcp/supabase.ts
-import { createClient } from "npm:@supabase/supabase-js@^2.98.0";
+import { createClient } from "npm:@supabase/supabase-js@2.99.0";
 function supabaseForUser(ctx) {
   return createClient(
     process.env.SUPABASE_URL,
@@ -57,7 +57,7 @@ var list_transactions_default = defineTool({
 
 // src/lib/mcp/tools/add-transaction.ts
 import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.20.1";
-import { z as z2 } from "npm:zod@^3.25.76";
+import { z as z2 } from "npm:zod@3.25.76";
 var add_transaction_default = defineTool2({
   name: "add_transaction",
   title: "Adicionar lan\xE7amento",
@@ -90,7 +90,7 @@ var add_transaction_default = defineTool2({
 
 // src/lib/mcp/tools/list-categories.ts
 import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.20.1";
-import { z as z3 } from "npm:zod@^3.25.76";
+import { z as z3 } from "npm:zod@3.25.76";
 var list_categories_default = defineTool3({
   name: "list_categories",
   title: "Listar categorias",
@@ -116,7 +116,7 @@ var list_categories_default = defineTool3({
 
 // src/lib/mcp/tools/monthly-summary.ts
 import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.20.1";
-import { z as z4 } from "npm:zod@^3.25.76";
+import { z as z4 } from "npm:zod@3.25.76";
 var monthly_summary_default = defineTool4({
   name: "monthly_summary",
   title: "Resumo mensal",
