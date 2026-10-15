@@ -385,7 +385,7 @@ const Index = () => {
 
       {/* Tabs */}
       <div className="max-w-6xl mx-auto px-4 -mt-4">
-        <div className="bg-card rounded-xl shadow-card flex sm:inline-flex p-1 gap-1 sm:flex-wrap">
+        <div className="bg-card rounded-xl shadow-card flex sm:inline-flex p-1 gap-0.5 sm:gap-1 sm:flex-wrap overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {tabs.map((tab) => {
             const active = activeTab === tab.key;
             return (
@@ -394,10 +394,10 @@ const Index = () => {
                 onClick={() => setActiveTab(tab.key)}
                 aria-label={tab.label}
                 title={tab.label}
-                className={`flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all ${
+                className={`flex shrink-0 items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-semibold transition-all ${
                   active
-                    ? "gradient-warm text-primary-foreground shadow-warm px-3 sm:px-4 flex-[2] sm:flex-none"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted px-2 sm:px-4 flex-1 sm:flex-none"
+                    ? "gradient-warm text-primary-foreground shadow-warm px-3 sm:px-4 sm:flex-none"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted px-2 sm:px-4 flex-1 min-w-[36px] sm:flex-none"
                 }`}
               >
                 {tab.icon}
