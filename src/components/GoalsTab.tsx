@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Pencil, Trash2, Star, Plus } from "lucide-react";
+import { Pencil, Trash2, Star, Plus, ScanLine } from "lucide-react";
+import InvestmentScreenshotDialog from "./InvestmentScreenshotDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -19,15 +20,17 @@ interface Props {
   onSave: (g: Omit<Goal, "id"> & { id?: string }) => void;
   onRemove: (id: string) => void;
   onMain: (id: string) => void;
+  addTransaction: (t: Omit<Transaction, "id">) => Promise<void> | void;
 }
 
 const empty = (year: number) => ({ name: "", target: "", deadline: `${year}-12-31`, category: "Investimentos", isMain: false });
 
-const GoalsTab = ({ goals, transactions, categories, year, onSave, onRemove, onMain }: Props) => {
+const GoalsTab = ({ goals, transactions, categories, year, onSave, onRemove, onMain, addTransaction }: Props) => {
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | undefined>();
   const [form, setForm] = useState(empty(year));
   const [viewId, setViewId] = useState<string | null>(null);
+  const [printOpen, setPrintOpen] = useState(false);
 
   const startNew = () => { setEditId(undefined); setForm({ ...empty(year), isMain: goals.length === 0 }); setOpen(true); };
   const startEdit = (g: GoalWithProgress) => {

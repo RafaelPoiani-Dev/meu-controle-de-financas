@@ -75,7 +75,7 @@ const Index = () => {
     const curM = now.getMonth() + 1;
     return goalsApi.goals.map((g) => {
       const fallback = curY;
-      const saved = goalContributions(g, transactions, fallback).reduce((s, t) => s + t.amount, 0);
+      const saved = goalContributions(g, transactions, fallback).reduce((s, t) => s + (t.type === "income" ? -t.amount : t.amount), 0);
       const dl = g.deadline ?? `${goalYear(g, fallback)}-12-31`;
       const monthsLeft = Math.max(0, (Number(dl.slice(0, 4)) - curY) * 12 + Number(dl.slice(5, 7)) - curM + 1);
       return { ...g, saved, monthsLeft };
@@ -619,6 +619,7 @@ const Index = () => {
             onSave={goalsApi.save}
             onRemove={goalsApi.remove}
             onMain={goalsApi.setMain}
+            addTransaction={addTransaction}
           />
         )}
 
