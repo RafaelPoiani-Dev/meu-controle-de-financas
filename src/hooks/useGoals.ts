@@ -23,12 +23,12 @@ export function goalYear(g: Goal, fallbackYear: number) {
   return g.deadline ? Number(g.deadline.slice(0, 4)) : fallbackYear;
 }
 
-/** Sum of transactions in the goal category inside the goal year (by payment date). */
+/** Transactions in the goal category up to the goal deadline (by payment date). Accumulated, so older contributions count too. */
 export function goalContributions(g: Goal, txs: Transaction[], fallbackYear: number) {
-  const y = String(goalYear(g, fallbackYear));
+  const limit = g.deadline ?? `${goalYear(g, fallbackYear)}-12-31`;
   const cat = g.category.toLowerCase();
   return txs
-    .filter((t) => t.category?.toLowerCase() === cat && (t.paymentDate || t.date).slice(0, 4) === y)
+    .filter((t) => t.category?.toLowerCase() === cat && (t.paymentDate || t.date) <= limit)
     .sort((a, b) => (a.paymentDate || a.date).localeCompare(b.paymentDate || b.date));
 }
 
