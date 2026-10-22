@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Pencil, Trash2, Star, Plus, ScanLine } from "lucide-react";
-import InvestmentScreenshotDialog from "./InvestmentScreenshotDialog";
+import { Pencil, Trash2, Star, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -20,17 +19,15 @@ interface Props {
   onSave: (g: Omit<Goal, "id"> & { id?: string }) => void;
   onRemove: (id: string) => void;
   onMain: (id: string) => void;
-  addTransaction: (t: Omit<Transaction, "id">) => Promise<void> | void;
 }
 
 const empty = (year: number) => ({ name: "", target: "", deadline: `${year}-12-31`, category: "Investimentos", isMain: false });
 
-const GoalsTab = ({ goals, transactions, categories, year, onSave, onRemove, onMain, addTransaction }: Props) => {
+const GoalsTab = ({ goals, transactions, categories, year, onSave, onRemove, onMain }: Props) => {
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | undefined>();
   const [form, setForm] = useState(empty(year));
   const [viewId, setViewId] = useState<string | null>(null);
-  const [printOpen, setPrintOpen] = useState(false);
 
   const startNew = () => { setEditId(undefined); setForm({ ...empty(year), isMain: goals.length === 0 }); setOpen(true); };
   const startEdit = (g: GoalWithProgress) => {
@@ -52,10 +49,7 @@ const GoalsTab = ({ goals, transactions, categories, year, onSave, onRemove, onM
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold text-foreground">Minhas metas</h2>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setPrintOpen(true)}><ScanLine className="mr-1 h-4 w-4" />Ler prints</Button>
-          <Button onClick={startNew}><Plus className="mr-1 h-4 w-4" />Nova meta</Button>
-        </div>
+        <Button onClick={startNew}><Plus className="mr-1 h-4 w-4" />Nova meta</Button>
       </div>
 
       <GoalsProgress goals={goals} onMain={onMain} onOpen={startNew} />
@@ -100,8 +94,6 @@ const GoalsTab = ({ goals, transactions, categories, year, onSave, onRemove, onM
         </DialogContent>
       </Dialog>
 
-      <InvestmentScreenshotDialog open={printOpen} onOpenChange={setPrintOpen} goals={goals} transactions={transactions} addTransaction={addTransaction} />
-
       <Dialog open={!!viewed} onOpenChange={(o) => !o && setViewId(null)}>
         <DialogContent>
           <DialogHeader><DialogTitle>Aportes — {viewed?.name}</DialogTitle></DialogHeader>
@@ -112,7 +104,7 @@ const GoalsTab = ({ goals, transactions, categories, year, onSave, onRemove, onM
               {contributions.map((t) => (
                 <li key={t.id} className="flex justify-between py-2 text-sm">
                   <span className="truncate"><span className="text-muted-foreground mr-2">{br(t.paymentDate || t.date)}</span>{t.description}</span>
-                  <span className={`font-semibold shrink-0 ${t.type === "income" ? "text-expense" : ""}`}>{t.type === "income" ? `− ${fmt(t.amount)}` : fmt(t.amount)}</span>
+                  <span className="font-semibold shrink-0">{fmt(t.amount)}</span>
                 </li>
               ))}
             </ul>
